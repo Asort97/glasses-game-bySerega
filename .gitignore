@@ -43,6 +43,9 @@ crashlytics-build.properties
 # Packaging
 *.unitypackage
 
+# Debug captures
+/Assets/Screenshots/
+
 # Plastic SCM
 *.ignore
 *.plastic
