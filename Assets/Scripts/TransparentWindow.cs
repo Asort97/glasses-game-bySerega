@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -11,7 +12,28 @@ public class TransparentWindow : MonoBehaviour
     private static extern IntPtr GetActiveWindow();
 
     [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
     private static extern int SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumChildWindows(IntPtr parentWindow, EnumWindowsProc enumProc, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindow(IntPtr hWnd, uint command);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -52,6 +74,9 @@ public class TransparentWindow : MonoBehaviour
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr GetModuleHandle(string moduleName);
 
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentProcessId();
+
     [DllImport("gdi32.dll")]
     private static extern IntPtr GetStockObject(int objectIndex);
 
@@ -62,6 +87,7 @@ public class TransparentWindow : MonoBehaviour
     private static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS pMarInset);
 
     private delegate IntPtr WindowProc(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam);
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct WNDCLASSEX
@@ -101,6 +127,7 @@ public class TransparentWindow : MonoBehaviour
     private const uint SWP_NOSIZE = 0x0001;
     private const uint SWP_NOMOVE = 0x0002;
     private const uint SWP_NOACTIVATE = 0x0010;
+    private const uint SWP_FRAMECHANGED = 0x0020;
     private const uint SWP_SHOWWINDOW = 0x0040;
     private const int SW_HIDE = 0;
     private const int SW_SHOWNA = 8;
@@ -110,6 +137,7 @@ public class TransparentWindow : MonoBehaviour
     private const int SM_CXVIRTUALSCREEN = 78;
     private const int SM_CYVIRTUALSCREEN = 79;
     private const uint WM_NCHITTEST = 0x0084;
+    private const uint GW_OWNER = 4;
     private static readonly IntPtr HTTRANSPARENT = new IntPtr(-1);
     private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
     private const string DimmerClassName = "TransparentWindowDesktopDimmer";
@@ -136,10 +164,10 @@ public class TransparentWindow : MonoBehaviour
     [FormerlySerializedAs("backgroundDarkness")]
     [Range(0f, 1f)]
     [Tooltip("How dark the desktop should be behind the Unity window")]
-    public float desktopDarkness = 0.5f;
+    public float desktopDarkness = 0f;
 
     [Tooltip("Fade in the desktop dimmer when the game starts")]
-    public bool animateDimmerOnStart = true;
+    public bool animateDimmerOnStart = false;
 
     [Min(0f)]
     [Tooltip("How long the background fade-in should take")]
@@ -150,7 +178,13 @@ public class TransparentWindow : MonoBehaviour
     public float dimmerFadeStartDelay = 0.15f;
 
     [Tooltip("Use Windows color-key transparency instead of per-pixel alpha. More reliable with Unity/URP, but can create color fringes with AA/post FX.")]
-    public bool useColorKeyTransparency = true;
+    public bool useColorKeyTransparency = false;
+
+    [Tooltip("Keep HDR enabled in color-key mode so bloom and emissive effects can work in the build")]
+    public bool enableHDRWithColorKey = true;
+
+    [Tooltip("Keep camera post-processing enabled in color-key mode")]
+    public bool enablePostProcessingWithColorKey = true;
 
     private float _currentDarkness;
     private float _fadeElapsed;
@@ -164,22 +198,19 @@ public class TransparentWindow : MonoBehaviour
         InitializeDimmerAnimation();
 
 #if !UNITY_EDITOR
-        _unityWindow = GetActiveWindow();
+        _unityWindow = ResolveUnityWindowHandle();
         if (_unityWindow == IntPtr.Zero)
             return;
 
         SetWindowLong(_unityWindow, GWL_STYLE, WS_POPUP | WS_VISIBLE);
 
-        uint exStyle = WS_EX_LAYERED;
+        uint exStyle = GetWindowLong(_unityWindow, GWL_EXSTYLE) | WS_EX_LAYERED;
         if (clickThrough)
             exStyle |= WS_EX_TRANSPARENT;
         SetWindowLong(_unityWindow, GWL_EXSTYLE, exStyle);
 
         if (useColorKeyTransparency)
-        {
-            uint colorKey = ColorKeyFromColor32(TransparencyKeyColor);
-            SetLayeredWindowAttributes(_unityWindow, colorKey, 0, LWA_COLORKEY);
-        }
+            ApplyWindowColorKey();
         else
         {
             MARGINS margins = new MARGINS { left = -1, right = -1, top = -1, bottom = -1 };
@@ -200,6 +231,8 @@ public class TransparentWindow : MonoBehaviour
     {
 #if !UNITY_EDITOR
         UpdateDimmerAnimation();
+        if (useColorKeyTransparency)
+            ApplyWindowColorKey();
         ApplyDesktopDimmer(false);
 #endif
     }
@@ -213,7 +246,11 @@ public class TransparentWindow : MonoBehaviour
         ShowWindow(_dimmerWindow, hasFocus ? SW_SHOWNA : SW_HIDE);
 
         if (hasFocus)
+        {
+            if (useColorKeyTransparency)
+                ApplyWindowColorKey();
             ApplyDesktopDimmer(true);
+        }
 #endif
     }
 
@@ -244,27 +281,32 @@ public class TransparentWindow : MonoBehaviour
     private void ConfigureCamera()
     {
         var cam = GetComponent<Camera>();
-        if (cam != null)
+        var cameraData = GetComponent<UniversalAdditionalCameraData>();
+
+        if (cam == null)
+            return;
+
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.allowHDR = useColorKeyTransparency && enableHDRWithColorKey;
+        cam.allowMSAA = false;
+
+        if (useColorKeyTransparency)
         {
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            if (useColorKeyTransparency)
-            {
-                Color keyColor = new Color32(TransparencyKeyColor.r, TransparencyKeyColor.g, TransparencyKeyColor.b, TransparencyKeyColor.a);
-                cam.backgroundColor = keyColor;
-                cam.allowHDR = false;
-                cam.allowMSAA = false;
-            }
-            else
-            {
-                cam.backgroundColor = new Color(0f, 0f, 0f, 0f);
-            }
+            cam.backgroundColor = GetTransparencyKeyCameraColor();
+        }
+        else
+        {
+            cam.backgroundColor = new Color(0f, 0f, 0f, 0f);
         }
 
-        var cameraData = GetComponent<UniversalAdditionalCameraData>();
-        if (cameraData != null && useColorKeyTransparency)
+        if (cameraData != null)
         {
-            cameraData.renderPostProcessing = false;
-            cameraData.antialiasing = AntialiasingMode.None;
+            cameraData.renderType = CameraRenderType.Base;
+            if (useColorKeyTransparency)
+            {
+                cameraData.renderPostProcessing = enablePostProcessingWithColorKey;
+                cameraData.antialiasing = AntialiasingMode.None;
+            }
         }
     }
 
@@ -342,6 +384,130 @@ public class TransparentWindow : MonoBehaviour
     private static uint ColorKeyFromColor32(Color32 color)
     {
         return (uint)(color.r | (color.g << 8) | (color.b << 16));
+    }
+
+    private void ApplyWindowColorKey()
+    {
+        if (_unityWindow == IntPtr.Zero)
+            return;
+
+        foreach (IntPtr windowHandle in GetUnityWindowHierarchy(_unityWindow))
+            ApplyColorKeyToWindow(windowHandle);
+    }
+
+    private void ApplyColorKeyToWindow(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+            return;
+
+        uint exStyle = GetWindowLong(windowHandle, GWL_EXSTYLE);
+        uint requiredStyle = exStyle | WS_EX_LAYERED;
+        if (clickThrough)
+            requiredStyle |= WS_EX_TRANSPARENT;
+
+        if (requiredStyle != exStyle)
+            SetWindowLong(windowHandle, GWL_EXSTYLE, requiredStyle);
+
+        uint colorKey = ColorKeyFromColor32(TransparencyKeyColor);
+        SetLayeredWindowAttributes(windowHandle, colorKey, 0, LWA_COLORKEY);
+        SetWindowPos(windowHandle, IntPtr.Zero, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+
+    private static IntPtr ResolveUnityWindowHandle()
+    {
+        IntPtr activeWindow = GetActiveWindow();
+        if (IsCurrentProcessWindow(activeWindow))
+            return activeWindow;
+
+        IntPtr foregroundWindow = GetForegroundWindow();
+        if (IsCurrentProcessWindow(foregroundWindow))
+            return foregroundWindow;
+
+        return FindCurrentProcessMainWindow();
+    }
+
+    private static bool IsCurrentProcessWindow(IntPtr hWnd)
+    {
+        if (hWnd == IntPtr.Zero)
+            return false;
+
+        GetWindowThreadProcessId(hWnd, out uint processId);
+        return processId == GetCurrentProcessId();
+    }
+
+    private static IntPtr FindCurrentProcessMainWindow()
+    {
+        uint currentProcessId = GetCurrentProcessId();
+        IntPtr result = IntPtr.Zero;
+
+        EnumWindows((hWnd, _) =>
+        {
+            if (!IsWindowVisible(hWnd))
+                return true;
+
+            GetWindowThreadProcessId(hWnd, out uint processId);
+            if (processId != currentProcessId)
+                return true;
+
+            if (GetWindow(hWnd, GW_OWNER) != IntPtr.Zero)
+                return true;
+
+            result = hWnd;
+            return false;
+        }, IntPtr.Zero);
+
+        return result;
+    }
+
+    private static List<IntPtr> GetUnityWindowHierarchy(IntPtr rootWindow)
+    {
+        var windows = new List<IntPtr>();
+        var seen = new HashSet<IntPtr>();
+
+        void AddWindow(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero)
+                return;
+
+            if (!seen.Add(hWnd))
+                return;
+
+            windows.Add(hWnd);
+        }
+
+        AddWindow(rootWindow);
+
+        EnumChildWindows(rootWindow, (childWindow, _) =>
+        {
+            AddWindow(childWindow);
+            return true;
+        }, IntPtr.Zero);
+
+        IntPtr foregroundWindow = GetForegroundWindow();
+        if (IsCurrentProcessWindow(foregroundWindow))
+            AddWindow(foregroundWindow);
+
+        IntPtr activeWindow = GetActiveWindow();
+        if (IsCurrentProcessWindow(activeWindow))
+            AddWindow(activeWindow);
+
+        return windows;
+    }
+
+    private static Color GetTransparencyKeyCameraColor()
+    {
+        float red = TransparencyKeyColor.r / 255f;
+        float green = TransparencyKeyColor.g / 255f;
+        float blue = TransparencyKeyColor.b / 255f;
+
+        if (QualitySettings.activeColorSpace == ColorSpace.Linear)
+        {
+            red = Mathf.GammaToLinearSpace(red);
+            green = Mathf.GammaToLinearSpace(green);
+            blue = Mathf.GammaToLinearSpace(blue);
+        }
+
+        return new Color(red, green, blue, 1f);
     }
 
     private void ApplyDesktopDimmer(bool force)
