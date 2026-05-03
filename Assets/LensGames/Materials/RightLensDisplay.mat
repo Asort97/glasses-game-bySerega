@@ -8,11 +8,12 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: RightLensDisplay
-  m_Shader: {fileID: 4800000, guid: 650dd9526735d5b46b79224bc6e94025, type: 3}
+  m_Shader: {fileID: 4800000, guid: 6e57a0c1425846cbb4cc9c95f3c74c81, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _LETTERBOX_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 1
@@ -27,11 +28,11 @@ Material:
     m_TexEnvs:
     - _BaseMap:
         m_Texture: {fileID: 8400000, guid: 8c1ec2d140e1b814ebeaa29978eec71a, type: 2}
-        m_Scale: {x: 1.35, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Scale: {x: 1.68, y: 2.49}
+        m_Offset: {x: 0, y: -16.68}
     - _MainTex:
         m_Texture: {fileID: 8400000, guid: 8c1ec2d140e1b814ebeaa29978eec71a, type: 2}
-        m_Scale: {x: 1.35, y: 1}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
@@ -44,15 +45,21 @@ Material:
     - _Cutoff: 0.5
     - _DstBlend: 0
     - _DstBlendAlpha: 0
+    - _EdgeInset: 0.02
+    - _Letterbox: 1
     - _QueueOffset: 0
     - _SampleGI: 0
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
+    - _UvExpandX: 1
+    - _UvExpandY: 1
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _LensCenterYZ: {r: 0.0211, g: 0.0019, b: 0, a: 0}
+    - _LensHalfSizeYZ: {r: 0.0155, g: 0.0108, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &2931082874039751867

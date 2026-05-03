@@ -6,8 +6,8 @@ public class Player : MonoBehaviour
     [SerializeField] private float jumpForce;
     private Rigidbody2D _rigidbody2D;
     private Animator _animator;
+    private bool _canJump;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         _rigidbody2D = GetComponent<Rigidbody2D>();
@@ -31,11 +31,34 @@ public class Player : MonoBehaviour
 
         transform.position = new Vector2(transform.position.x + (x*movementSpeed*Time.deltaTime) , transform.position.y + (y*movementSpeed*Time.deltaTime));
 
-        if(Input.GetKeyDown(KeyCode.Space))
+        if(Input.GetKeyDown(KeyCode.Space) && _canJump)
         {
             _rigidbody2D.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             _animator.SetTrigger("jump");
         }
     }
 
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.gameObject.CompareTag("Ground"))
+        {   
+            _canJump = true;
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.gameObject.TryGetComponent(out Ring ring))
+        {
+            ring.Take();
+        }    
+    }
+
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        if(collision.gameObject.CompareTag("Ground"))
+        {   
+            _canJump = false;
+        }
+    }
 }
