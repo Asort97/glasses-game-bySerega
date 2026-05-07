@@ -4,9 +4,12 @@ public class Player : MonoBehaviour
 {
     [SerializeField] private float movementSpeed;
     [SerializeField] private float jumpForce;
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private float groundCheckRadius = 0.1f;
+    [SerializeField] private LayerMask groundLayer;
+
     private Rigidbody2D _rigidbody2D;
     private Animator _animator;
-    private bool _canJump;
 
     void Start()
     {
@@ -14,51 +17,30 @@ public class Player : MonoBehaviour
         _animator = GetComponent<Animator>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         float x = Input.GetAxis("Horizontal");
-        float y = Input.GetAxis("Vertical");
 
-        if( x != 0 || y != 0 )
-        {
-            _animator.SetBool("running", true);
-        }
-        else
-        {
-            _animator.SetBool("running", false);
-        }
+        _animator.SetBool("running", x != 0);
 
-        transform.position = new Vector2(transform.position.x + (x*movementSpeed*Time.deltaTime) , transform.position.y + (y*movementSpeed*Time.deltaTime));
+        _rigidbody2D.linearVelocity = new Vector2(x * movementSpeed, _rigidbody2D.linearVelocity.y);
 
-        if(Input.GetKeyDown(KeyCode.Space) && _canJump)
+        bool isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
+            _rigidbody2D.linearVelocity = new Vector2(_rigidbody2D.linearVelocity.x, 0f);
             _rigidbody2D.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             _animator.SetTrigger("jump");
         }
     }
 
-    void OnCollisionEnter2D(Collision2D collision)
-    {
-        if(collision.gameObject.CompareTag("Ground"))
-        {   
-            _canJump = true;
-        }
-    }
-
     void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.gameObject.TryGetComponent(out Ring ring))
+        if (collision.gameObject.TryGetComponent(out Ring ring))
         {
             ring.Take();
-        }    
-    }
-
-    void OnCollisionExit2D(Collision2D collision)
-    {
-        if(collision.gameObject.CompareTag("Ground"))
-        {   
-            _canJump = false;
         }
     }
 }
+

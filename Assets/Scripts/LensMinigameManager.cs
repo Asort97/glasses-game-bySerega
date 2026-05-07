@@ -12,13 +12,17 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private MinigameBase[] minigames;
     [SerializeField] private Image          timerFill;
 
-    private int[]        _order;
-    private int          _orderIndex;
-    private MinigameBase _current;
-    private int          _lastIdx = -1;
+    private int[]            _order;
+    private int              _orderIndex;
+    private MinigameBase     _current;
+    private int              _lastIdx = -1;
+    private bool             _paused;
+    private LensHealthSystem _health;
 
     private void Start()
     {
+        _health = GetComponent<LensHealthSystem>();
+
         // Скрываем все мини-игры
         foreach (var mg in minigames)
             if (mg != null) mg.gameObject.SetActive(false);
@@ -33,6 +37,28 @@ public class LensMinigameManager : MonoBehaviour
             timerFill.fillAmount = _current.Progress;
     }
 
+    /// <summary>Приостановить/возобновить смену мини-игр (при потере HP).</summary>
+    public void SetPaused(bool paused)
+    {
+        _paused = paused;
+        if (paused)
+        {
+            // Остановить текущую мини-игру и скрыть
+            if (_current != null)
+            {
+                Detach(_current);
+                _current.StopGame();
+                _current.gameObject.SetActive(false);
+                _current = null;
+            }
+        }
+        else
+        {
+            // Возобновить — запустить следующую
+            ShowNext();
+        }
+    }
+
     private void ShowNext()
     {
         if (_orderIndex >= _order.Length)
@@ -45,31 +71,37 @@ public class LensMinigameManager : MonoBehaviour
         _current = minigames[idx];
 
         _current.gameObject.SetActive(true);
-        _current.OnWin  += HandleEnd;
-        _current.OnLose += HandleEnd;
+        _current.OnWin  += HandleWin;
+        _current.OnLose += HandleLose;
         _current.StartGame();
     }
 
-    private void HandleEnd()
+    private void HandleWin()  => FinishGame(false);
+    private void HandleLose() => FinishGame(true);
+
+    private void FinishGame(bool isLose)
     {
         MinigameBase finished = _current;
-
-        // Сначала отписываемся
         Detach(finished);
-
-        // Останавливаем и скрываем
         finished.StopGame();
         finished.gameObject.SetActive(false);
 
-        // Показываем следующую
+        if (_paused) return;
+
+        if (isLose && _health != null)
+        {
+            _health.OnLose();
+            if (_paused) return;
+        }
+
         ShowNext();
     }
 
     private void Detach(MinigameBase mg)
     {
         if (mg == null) return;
-        mg.OnWin  -= HandleEnd;
-        mg.OnLose -= HandleEnd;
+        mg.OnWin  -= HandleWin;
+        mg.OnLose -= HandleLose;
     }
 
     /// <summary>
