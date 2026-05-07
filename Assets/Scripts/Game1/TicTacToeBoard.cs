@@ -3,7 +3,20 @@ using UnityEngine;
 
 public class TicTacToeBoard : MonoBehaviour
 {
+    /// <summary>Все сценарии пройдены.</summary>
+    public event Action OnAllComplete;
+    /// <summary>Игрок кликнул правильную клетку — победа.</summary>
+    public event Action OnCorrectClick;
+    /// <summary>Игрок кликнул неправильную клетку — поражение.</summary>
+    public event Action OnWrongClick;
     public enum Mark { X, O }
+
+    [Serializable]
+    public class TargetCell
+    {
+        [Range(0, 2)] public int row;
+        [Range(0, 2)] public int col;
+    }
 
     [Serializable]
     public class Scenario
@@ -14,11 +27,8 @@ public class TicTacToeBoard : MonoBehaviour
         [Tooltip("За какой символ ходит игрок в этом сценарии.")]
         public Mark playerSymbol = Mark.X;
 
-        [Tooltip("Правильная клетка: row (0=верх, 2=низ).")]
-        [Range(0, 2)] public int targetRow = 0;
-
-        [Tooltip("Правильная клетка: col (0=лево, 2=право).")]
-        [Range(0, 2)] public int targetCol = 0;
+        [Tooltip("Последовательность правильных клеток которые надо кликнуть по очерёди.")]
+        public TargetCell[] targetCells;
     }
 
     [Header("Refs")]
@@ -86,35 +96,35 @@ public class TicTacToeBoard : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (!_lensCollider.Raycast(ray, out RaycastHit hit, 1000f)) return;
 
-        Vector3 world = UvToBoardWorld(hit.textureCoord);
-        int idx = WorldToCellIndex(world);
+        int idx = UvToCellIndex(hit.textureCoord);
         if (idx < 0) return;
 
         var sc = scenarios[_current];
-        int targetIdx = sc.targetRow * 3 + sc.targetCol;
+        if (sc.targetCells == null || sc.targetCells.Length == 0) return;
+        var target = sc.targetCells[0];
+        int targetIdx = target.row * 3 + target.col;
         int row = idx / 3, col = idx % 3;
-        string scName = sc.root != null ? sc.root.name : "<none>";
 
         SpawnMark(row, col, sc.playerSymbol);
 
-        if (idx == targetIdx)
-            Debug.Log($"[TicTacToe] WIN. Scenario '{scName}' as {sc.playerSymbol} clicked correct cell ({row},{col}).");
-        else
-            Debug.Log($"[TicTacToe] LOSE. Scenario '{scName}' as {sc.playerSymbol} wrong cell ({row},{col}), expected ({sc.targetRow},{sc.targetCol}).");
-
-        if (advanceOnClick)
+        if (idx != targetIdx)
         {
-            int next = _current + 1;
-            if (advanceDelay > 0f)
-            {
-                _advancing = true;
-                Invoke(nameof(AdvanceNow), advanceDelay);
-                _pendingNext = next;
-            }
-            else
-            {
-                SetScenario(next);
-            }
+            OnWrongClick?.Invoke(); // неверная клетка — поражение
+            return;
+        }
+
+        OnCorrectClick?.Invoke(); // верная клетка — победа
+        // переход к следующему сценарию
+        int next = _current + 1;
+        if (advanceDelay > 0f)
+        {
+            _advancing = true;
+            Invoke(nameof(AdvanceNow), advanceDelay);
+            _pendingNext = next;
+        }
+        else
+        {
+            SetScenario(next);
         }
     }
 
@@ -158,6 +168,9 @@ public class TicTacToeBoard : MonoBehaviour
 
     private void SetScenario(int index)
     {
+        _advancing = false;
+        CancelInvoke(nameof(AdvanceNow));
+
         ClearSpawnedMarks();
         if (scenarios == null || scenarios.Length == 0)
         {
@@ -171,6 +184,7 @@ public class TicTacToeBoard : MonoBehaviour
         {
             _current = -1;
             _finished = true;
+            OnAllComplete?.Invoke();
             Debug.Log("[TicTacToe] All scenarios complete. Press R to restart.");
             return;
         }
@@ -180,35 +194,39 @@ public class TicTacToeBoard : MonoBehaviour
         var sc = scenarios[_current];
         if (sc != null && sc.root != null) sc.root.SetActive(true);
         string scName = sc != null && sc.root != null ? sc.root.name : "<none>";
-        int tr = sc != null ? sc.targetRow : -1;
-        int tc = sc != null ? sc.targetCol : -1;
-        Debug.Log($"[TicTacToe] Scenario '{scName}' active. Target cell ({tr},{tc}).");
+        int totalSteps = sc?.targetCells != null ? sc.targetCells.Length : 0;
+        Debug.Log($"[TicTacToe] Scenario '{scName}' active. Steps: {totalSteps}");
     }
 
-    private Vector3 UvToBoardWorld(Vector2 uv)
+    /// <summary>Перезапустить игру с случайного сценария.</summary>
+    public void ResetGame()
     {
-        Vector3 c = boardCamera.transform.position;
-        float halfH = boardCamera.orthographicSize;
-        float halfW = halfH * boardCamera.aspect;
-        float x = Mathf.Lerp(c.x - halfW, c.x + halfW, uv.x);
-        float y = Mathf.Lerp(c.y - halfH, c.y + halfH, uv.y);
-        return new Vector3(x, y, 0f);
+        if (scenarios == null || scenarios.Length == 0) { SetScenario(0); return; }
+        SetScenario(UnityEngine.Random.Range(0, scenarios.Length));
     }
 
-    private int WorldToCellIndex(Vector3 world)
+    // Сравниваем UV попадания с viewport-позицией каждой ячейки через WorldToViewportPoint.
+    // Это работает независимо от положения камеры и offset доски.
+    private int UvToCellIndex(Vector2 uv)
     {
-        float half = (cellHitSize > 0f ? cellHitSize : cellSpacing) * 0.5f;
+        if (boardCamera == null) return -1;
+        float camW = boardCamera.orthographicSize * boardCamera.aspect * 2f;
+        float camH = boardCamera.orthographicSize * 2f;
+        float halfHitX = (cellHitSize > 0f ? cellHitSize : cellSpacing) * 0.5f / camW;
+        float halfHitY = (cellHitSize > 0f ? cellHitSize : cellSpacing) * 0.5f / camH;
+
         int bestIdx = -1;
         float bestSqr = float.MaxValue;
         for (int r = 0; r < 3; r++)
         {
             for (int c = 0; c < 3; c++)
             {
-                float cx = boardCenter.x + (c - 1) * cellSpacing;
-                float cy = boardCenter.y + (1 - r) * cellSpacing;
-                float dx = Mathf.Abs(world.x - cx);
-                float dy = Mathf.Abs(world.y - cy);
-                if (dx > half || dy > half) continue;
+                float wx = boardCenter.x + (c - 1) * cellSpacing;
+                float wy = boardCenter.y + (1 - r) * cellSpacing;
+                Vector3 vp = boardCamera.WorldToViewportPoint(new Vector3(wx, wy, 0f));
+                float dx = Mathf.Abs(uv.x - vp.x);
+                float dy = Mathf.Abs(uv.y - vp.y);
+                if (dx > halfHitX || dy > halfHitY) continue;
                 float sqr = dx * dx + dy * dy;
                 if (sqr < bestSqr) { bestSqr = sqr; bestIdx = r * 3 + c; }
             }

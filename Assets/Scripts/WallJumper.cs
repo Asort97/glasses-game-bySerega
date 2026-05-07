@@ -18,9 +18,8 @@ public class WallJumper : MonoBehaviour
     private Wall           _currentWall;
     private bool           _jumping;
 
-    // Целевые X-позиции у каждой стены (вычисляются из начального положения)
-    private float _leftX;
-    private float _rightX;
+    // Отступ игрока от центра стены (вычисляется один раз в Awake)
+    private float _offsetFromWall;
 
     private void Awake()
     {
@@ -49,13 +48,10 @@ public class WallJumper : MonoBehaviour
         float distRight = Mathf.Abs(transform.position.x - rightWall.position.x);
         _currentWall = distLeft < distRight ? Wall.Left : Wall.Right;
 
-        // Запоминаем отступ от стены и применяем к обеим якорным точкам
-        float offset = _currentWall == Wall.Right
-            ? rightWall.position.x - transform.position.x   // насколько игрок левее правой стены
-            : transform.position.x - leftWall.position.x;   // насколько игрок правее левой стены
-
-        _rightX = rightWall.position.x - offset;
-        _leftX  = leftWall.position.x  + offset;
+        // Запоминаем отступ игрока от центра текущей стены
+        _offsetFromWall = _currentWall == Wall.Right
+            ? Mathf.Abs(rightWall.position.x - transform.position.x)
+            : Mathf.Abs(transform.position.x - leftWall.position.x);
 
         ApplyWallState();
     }
@@ -73,8 +69,11 @@ public class WallJumper : MonoBehaviour
         _jumping = true;
         _anim.SetBool("jump", true);
 
-        Wall    targetWall = _currentWall == Wall.Left ? Wall.Right : Wall.Left;
-        float   targetX    = targetWall == Wall.Left ? _leftX : _rightX;
+        Wall  targetWall = _currentWall == Wall.Left ? Wall.Right : Wall.Left;
+        // Вычисляем X динамически от текущего положения стен
+        float targetX = targetWall == Wall.Left
+            ? leftWall.position.x  + _offsetFromWall
+            : rightWall.position.x - _offsetFromWall;
 
         Vector3 startPos = transform.position;
         Vector3 endPos   = new Vector3(targetX, transform.position.y, transform.position.z);
@@ -92,6 +91,15 @@ public class WallJumper : MonoBehaviour
         _anim.SetBool("jump", false);
         ApplyWallState();
         _jumping = false;
+    }
+
+    private void OnDisable()
+    {
+        // Если объект выключили в середине прыжка — сбросить состояние,
+        // чтобы при следующем включении игрок мог прыгать снова
+        StopAllCoroutines();
+        _jumping = false;
+        if (_anim != null) _anim.SetBool("jump", false);
     }
 
     private void ApplyWallState()

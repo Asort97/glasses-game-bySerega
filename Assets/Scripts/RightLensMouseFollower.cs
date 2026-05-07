@@ -8,9 +8,6 @@ public class RightLensMouseFollower : MonoBehaviour
     [SerializeField] private Transform target;
     [SerializeField] private float edgePadding = 0.6f;
 
-    [Header("Игра")]
-    [SerializeField] private float surviveTime = 7f;
-
     private MeshCollider _lensCollider;
     private MeshFilter _lensMeshFilter;
     private Vector3 _desiredPosition;
@@ -22,9 +19,6 @@ public class RightLensMouseFollower : MonoBehaviour
     private int _normalAxis = 2;
     private bool _invertU;
     private bool _invertV;
-
-    private float _timer;
-    private bool _gameOver;
 
     private void Awake()
     {
@@ -40,6 +34,10 @@ public class RightLensMouseFollower : MonoBehaviour
         if (target == null)
             target = GameObject.Find("Cube (1)")?.transform;
 
+        // Фолбэк — двигать сам объект со скриптом
+        if (target == null)
+            target = transform;
+
         if (target != null)
         {
             _targetZ = target.position.z;
@@ -52,50 +50,15 @@ public class RightLensMouseFollower : MonoBehaviour
 
     private void Update()
     {
-        if (_gameOver)
-            return;
-
-        _timer += Time.deltaTime;
-        if (_timer >= surviveTime)
-        {
-            _gameOver = true;
-            Debug.Log("[GhostGame] WIN — survived " + surviveTime + " seconds!");
-            return;
-        }
-
-        if (!IsReady())
-            return;
+        if (!IsReady()) return;
 
         if (TryGetMouseUv(out Vector2 uv))
         {
             _desiredPosition = GetWorldPositionFromUv(uv);
             _hasDesiredPosition = true;
         }
-
-        if (!_hasDesiredPosition)
-            return;
-
-        target.position = _desiredPosition;
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (_gameOver) return;
-        if (other.GetComponent<BouncingGhost>() != null)
-        {
-            _gameOver = true;
-            Debug.Log("[GhostGame] LOSE — touched by " + other.gameObject.name);
-        }
-    }
-
-    private void OnCollisionEnter2D(Collision2D col)
-    {
-        if (_gameOver) return;
-        if (col.gameObject.GetComponent<BouncingGhost>() != null)
-        {
-            _gameOver = true;
-            Debug.Log("[GhostGame] LOSE — touched by " + col.gameObject.name);
-        }
+        if (_hasDesiredPosition)
+            target.position = _desiredPosition;
     }
 
     private bool TryGetMouseUv(out Vector2 uv)

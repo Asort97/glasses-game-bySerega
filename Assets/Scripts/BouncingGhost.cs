@@ -31,9 +31,19 @@ public class BouncingGhost : MonoBehaviour
 
     private void Start()
     {
-        // Призраки не сталкиваются друг с другом
+        ApplyIgnoreCollisions();
+    }
+
+    private void OnEnable()
+    {
+        ApplyIgnoreCollisions();
+    }
+
+    private void ApplyIgnoreCollisions()
+    {
         var myCol = GetComponent<Collider2D>();
-        var ghosts = Object.FindObjectsByType<BouncingGhost>(FindObjectsSortMode.None);
+        if (myCol == null) return;
+        var ghosts = Object.FindObjectsByType<BouncingGhost>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         foreach (var g in ghosts)
         {
             if (g == this) continue;
