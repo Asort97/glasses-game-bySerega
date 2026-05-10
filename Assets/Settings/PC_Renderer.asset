@@ -27,7 +27,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: 7833122117494664109}
   - {fileID: 424242424242424242}
-  m_RendererFeatureMap: 
+  - {fileID: 8911001305281039425}
+  m_RendererFeatureMap: 9471feffffffffff
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -53,6 +54,22 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &424242424242424242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 615f57b4e8685034abf1b96202b2bccf, type: 3}
+  m_Name: TransparentChromaKeyRendererFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    keyColor: {r: 1, g: 0, b: 1, a: 1}
+    glowThreshold: 0.01
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88,7 +105,7 @@ MonoBehaviour:
   - {fileID: 2800000, guid: 3302065f671a8450b82c9ddf07426f3a, type: 3}
   - {fileID: 2800000, guid: 56a77a3e8d64f47b6afe9e3c95cb57d5, type: 3}
   m_Shader: {fileID: 4800000, guid: 0849e84e3d62649e8882e9d6f056a017, type: 3}
---- !u!114 &424242424242424242
+--- !u!114 &8911001305281039425
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -97,10 +114,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 615f57b4e8685034abf1b96202b2bccf, type: 3}
-  m_Name: TransparentChromaKeyRendererFeature
+  m_Script: {fileID: 11500000, guid: 8a84012143a23cd4bad2537a04b54c58, type: 3}
+  m_Name: SplitChromaticAberration
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   settings:
-    keyColor: {r: 1, g: 0, b: 1, a: 1}
-    glowThreshold: 0.01
+    renderPassEvent: 600
+    leftColor: {r: 0.13263454, g: 0.6886792, b: 0, a: 1}
+    rightColor: {r: 0.6509434, g: 0.10234959, b: 0, a: 1}
+    strength: 0.0313
