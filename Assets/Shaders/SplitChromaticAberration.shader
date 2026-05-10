@@ -26,6 +26,8 @@ Shader "Custom/SplitChromaticAberration"
             float4 _LeftColor;
             float4 _RightColor;
             float  _Strength;
+            float  _ExcludeAll;
+            TEXTURE2D_X(_SplitCAMaskTexture);
 
             half4 Frag(Varyings input) : SV_Target
             {
@@ -39,6 +41,11 @@ Shader "Custom/SplitChromaticAberration"
                 float2 dir    = uv - float2(0.5, 0.5);
                 float2 offset = dir * _Strength;
 
+                half excludeHere    = saturate(SAMPLE_TEXTURE2D_X_LOD(_SplitCAMaskTexture, sampler_LinearClamp, uv,                    0).r);
+                half excludeShifted = saturate(SAMPLE_TEXTURE2D_X_LOD(_SplitCAMaskTexture, sampler_LinearClamp, saturate(uv + offset), 0).r);
+                half excludeMask    = max(max(excludeHere, excludeShifted), (half)_ExcludeAll);
+                half effectMask     = 1.0h - step(0.001h, excludeMask);
+
                 // Original pixel and shifted copy.
                 half4 originalSample = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv,                    0);
                 half3 original       = originalSample.rgb;
@@ -49,10 +56,61 @@ Shader "Custom/SplitChromaticAberration"
                 // (green shift leaves magenta, red shift leaves cyan), so do not subtract from original.
                 half originalLum = max(max(original.r, original.g), original.b);
                 half shiftedLum  = max(max(shifted.r,  shifted.g),  shifted.b);
-                half fringe      = saturate(shiftedLum - originalLum);
+                half fringe      = saturate(shiftedLum - originalLum) * effectMask;
                 half3 result     = saturate(original + saturate(tint) * fringe);
 
                 return half4(result, originalSample.a);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "SplitChromaticAberrationMask"
+            ZWrite Off
+            ZTest LEqual
+            Cull Off
+            Blend One One
+
+            HLSLPROGRAM
+            #pragma vertex VertMask
+            #pragma fragment FragMask
+            #pragma target 3.5
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+            struct MaskAttributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv         : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct MaskVaryings
+            {
+                float4 positionHCS : SV_POSITION;
+                float2 uv          : TEXCOORD0;
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            MaskVaryings VertMask(MaskAttributes input)
+            {
+                MaskVaryings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
+                output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = input.uv;
+                return output;
+            }
+
+            half4 FragMask(MaskVaryings input) : SV_Target
+            {
+                half alpha = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).a;
+                return half4(alpha, alpha, alpha, alpha);
             }
             ENDHLSL
         }

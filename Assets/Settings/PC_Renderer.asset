@@ -120,6 +120,9 @@ MonoBehaviour:
   m_Active: 1
   settings:
     renderPassEvent: 600
-    leftColor: {r: 0.13263454, g: 0.6886792, b: 0, a: 1}
-    rightColor: {r: 0.6509434, g: 0.10234959, b: 0, a: 1}
-    strength: 0.0313
+    leftColor: {r: 0, g: 1, b: 0.44627285, a: 1}
+    rightColor: {r: 1, g: 0.15662651, b: 0, a: 1}
+    strength: 0.0175
+    excludedLayers:
+      serializedVersion: 2
+      m_Bits: 1024
