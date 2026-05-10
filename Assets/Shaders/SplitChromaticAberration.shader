@@ -39,19 +39,20 @@ Shader "Custom/SplitChromaticAberration"
                 float2 dir    = uv - float2(0.5, 0.5);
                 float2 offset = dir * _Strength;
 
-                // Оригінальний піксель та зміщена "копія"
-                half3 original = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv,                    0).rgb;
-                half3 shifted  = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, saturate(uv + offset), 0).rgb;
+                // Original pixel and shifted copy.
+                half4 originalSample = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv,                    0);
+                half3 original       = originalSample.rgb;
+                half3 shifted        = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, saturate(uv + offset), 0).rgb;
 
-                // Зміщуємо ТІЛЬКИ ті канали, що є в кольорі тинту.
-                // green(0,1,0) → зміщується лише G → тільки зелена бахрома.
-                // red(1,0,0)   → зміщується лише R → тільки червона бахрома.
-                half3 result;
-                result.r = lerp(original.r, shifted.r, tint.r);
-                result.g = lerp(original.g, shifted.g, tint.g);
-                result.b = lerp(original.b, shifted.b, tint.b);
+                // Add only the selected tint on the bright leading edge.
+                // Replacing individual RGB channels creates the opposite color on the trailing edge
+                // (green shift leaves magenta, red shift leaves cyan), so do not subtract from original.
+                half originalLum = max(max(original.r, original.g), original.b);
+                half shiftedLum  = max(max(shifted.r,  shifted.g),  shifted.b);
+                half fringe      = saturate(shiftedLum - originalLum);
+                half3 result     = saturate(original + saturate(tint) * fringe);
 
-                return half4(result, 1.0);
+                return half4(result, originalSample.a);
             }
             ENDHLSL
         }
