@@ -7,6 +7,7 @@ public class RightLensMouseFollower : MonoBehaviour
     [SerializeField] private Transform lensTransform;
     [SerializeField] private Transform target;
     [SerializeField] private float edgePadding = 0.6f;
+    [SerializeField] private bool targetColliderAsTrigger = true;
 
     private MeshCollider _lensCollider;
     private MeshFilter _lensMeshFilter;
@@ -43,6 +44,7 @@ public class RightLensMouseFollower : MonoBehaviour
             _targetZ = target.position.z;
             _desiredPosition = target.position;
             _hasDesiredPosition = true;
+            ConfigureTargetCollider();
         }
 
         EnsureLensCollider();
@@ -114,6 +116,16 @@ public class RightLensMouseFollower : MonoBehaviour
 
         _lensCollider.sharedMesh = _lensMeshFilter.sharedMesh;
         _lensCollider.convex = false;
+    }
+
+    private void ConfigureTargetCollider()
+    {
+        if (!targetColliderAsTrigger || target == null)
+            return;
+
+        Collider2D[] colliders = target.GetComponents<Collider2D>();
+        for (int i = 0; i < colliders.Length; i++)
+            colliders[i].isTrigger = true;
     }
 
     private bool TryProjectMouseToLensPlane(Ray ray, out Vector3 localPoint)

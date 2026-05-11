@@ -61,14 +61,37 @@ public class LensMinigameManager : MonoBehaviour
 
     private void ShowNext()
     {
-        if (_orderIndex >= _order.Length)
+        if (minigames == null || minigames.Length == 0)
+        {
+            Debug.LogError($"[{nameof(LensMinigameManager)}] No minigames assigned on {name}.", this);
+            return;
+        }
+
+        if (_order == null || _order.Length == 0 || _orderIndex >= _order.Length)
             BuildOrder(_lastIdx);
 
         Detach(_current);
 
-        int idx = _order[_orderIndex++];
-        _lastIdx = idx;
-        _current = minigames[idx];
+        _current = null;
+        for (int attempts = 0; attempts < _order.Length; attempts++)
+        {
+            int idx = _order[_orderIndex++];
+            if (_orderIndex >= _order.Length)
+                BuildOrder(_lastIdx);
+
+            if (idx < 0 || idx >= minigames.Length || minigames[idx] == null)
+                continue;
+
+            _lastIdx = idx;
+            _current = minigames[idx];
+            break;
+        }
+
+        if (_current == null)
+        {
+            Debug.LogError($"[{nameof(LensMinigameManager)}] All minigame slots are empty on {name}.", this);
+            return;
+        }
 
         _current.gameObject.SetActive(true);
         _current.OnWin  += HandleWin;
@@ -83,8 +106,11 @@ public class LensMinigameManager : MonoBehaviour
     {
         MinigameBase finished = _current;
         Detach(finished);
-        finished.StopGame();
-        finished.gameObject.SetActive(false);
+        if (finished != null)
+        {
+            finished.StopGame();
+            finished.gameObject.SetActive(false);
+        }
 
         if (_paused) return;
 
@@ -111,6 +137,12 @@ public class LensMinigameManager : MonoBehaviour
     private void BuildOrder(int noFirstIdx)
     {
         _orderIndex = 0;
+        if (minigames == null)
+        {
+            _order = new int[0];
+            return;
+        }
+
         _order = new int[minigames.Length];
         for (int i = 0; i < _order.Length; i++) _order[i] = i;
 
