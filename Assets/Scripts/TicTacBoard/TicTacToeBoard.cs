@@ -65,6 +65,21 @@ public class TicTacToeBoard : MonoBehaviour
 
     private void Awake()
     {
+        ResolveRefs();
+        EnsureLensCollider();
+        if (marksParent == null) marksParent = transform;
+
+        SetScenario(0);
+    }
+
+    private void OnEnable()
+    {
+        ResolveRefs();
+        EnsureLensCollider();
+    }
+
+    private void ResolveRefs()
+    {
         if (mainCamera == null) mainCamera = Camera.main;
         if (lensTransform == null)
         {
@@ -76,10 +91,23 @@ public class TicTacToeBoard : MonoBehaviour
             var go = GameObject.Find("RightGameCamera");
             if (go != null) boardCamera = go.GetComponent<Camera>();
         }
-        if (lensTransform != null) _lensCollider = lensTransform.GetComponent<MeshCollider>();
-        if (marksParent == null) marksParent = transform;
+    }
 
-        SetScenario(0);
+    private void EnsureLensCollider()
+    {
+        if (lensTransform == null)
+            return;
+
+        MeshFilter meshFilter = lensTransform.GetComponent<MeshFilter>();
+        if (meshFilter == null || meshFilter.sharedMesh == null)
+            return;
+
+        _lensCollider = lensTransform.GetComponent<MeshCollider>();
+        if (_lensCollider == null)
+            _lensCollider = lensTransform.gameObject.AddComponent<MeshCollider>();
+
+        _lensCollider.sharedMesh = meshFilter.sharedMesh;
+        _lensCollider.convex = false;
     }
 
     private void Update()
@@ -91,7 +119,12 @@ public class TicTacToeBoard : MonoBehaviour
         }
         if (_advancing) return;
         if (!Input.GetMouseButtonDown(0)) return;
-        if (mainCamera == null || boardCamera == null || _lensCollider == null) return;
+        if (mainCamera == null || boardCamera == null || _lensCollider == null)
+        {
+            ResolveRefs();
+            EnsureLensCollider();
+            if (mainCamera == null || boardCamera == null || _lensCollider == null) return;
+        }
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (!_lensCollider.Raycast(ray, out RaycastHit hit, 1000f)) return;
