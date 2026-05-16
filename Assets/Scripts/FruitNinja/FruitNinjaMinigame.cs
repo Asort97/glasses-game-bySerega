@@ -16,7 +16,11 @@ public class FruitNinjaMinigame : MinigameBase
     [SerializeField] private int requiredSlices = 8;
     [SerializeField] private float spawnIntervalMin = 0.65f;
     [SerializeField] private float spawnIntervalMax = 1.05f;
-    [SerializeField] private float minSliceDistance = 0.06f;
+    [SerializeField] private float minSliceDistance = 0.035f;
+    [SerializeField] private float minSliceSpeed = 2.5f;
+    [SerializeField] private float minSliceScreenDistance = 3f;
+    [SerializeField] private float minSliceScreenSpeed = 320f;
+    [SerializeField, Range(0f, 1f)] private float minSliceChordFraction = 0.35f;
     [SerializeField] private float sliceHitPadding = 0.12f;
     [SerializeField] private float trailVisibleTime = 0.18f;
     [SerializeField] private float sliceSeparationVelocity = 0.45f;
@@ -27,6 +31,7 @@ public class FruitNinjaMinigame : MinigameBase
     [Header("Fruit Motion")]
     [SerializeField] private float fruitZ = -4f;
     [SerializeField] private float spawnPadding = 0.65f;
+    [SerializeField, Range(0.1f, 1f)] private float spawnHorizontalFraction = 0.42f;
     [SerializeField] private Vector2 radiusRange = new Vector2(0.34f, 0.52f);
     [SerializeField] private Vector2 upwardVelocityRange = new Vector2(8.2f, 10.8f);
     [SerializeField] private Vector2 sideVelocityRange = new Vector2(-1.45f, 1.45f);
@@ -55,7 +60,10 @@ public class FruitNinjaMinigame : MinigameBase
 
     private bool _fruitRunning;
     private bool _hasPreviousPoint;
+    private bool _hasActiveSliceStroke;
+    private Vector2 _sliceStrokeStart;
     private Vector2 _previousPoint;
+    private Vector2 _previousScreenPoint;
     private Vector2 _lastSliceDirection = Vector2.right;
     private float _trailAge;
     private float _elapsed;
@@ -108,6 +116,7 @@ public class FruitNinjaMinigame : MinigameBase
         _sliced = 0;
         _spawnTimer = 0.15f;
         _hasPreviousPoint = false;
+        _hasActiveSliceStroke = false;
         Progress = 1f;
     }
 
@@ -115,6 +124,7 @@ public class FruitNinjaMinigame : MinigameBase
     {
         _fruitRunning = false;
         _hasPreviousPoint = false;
+        _hasActiveSliceStroke = false;
         HideTrail();
         ClearRuntimeObjects();
         base.StopGame();
@@ -129,7 +139,7 @@ public class FruitNinjaMinigame : MinigameBase
         Progress = 1f - Mathf.Clamp01(_elapsed / surviveTime);
 
         UpdateSpawning(dt);
-        UpdatePointer();
+        UpdatePointer(dt);
         UpdateFruits(dt);
         UpdatePieces(dt);
         UpdateTrail(dt);
@@ -270,7 +280,9 @@ public class FruitNinjaMinigame : MinigameBase
 
         Bounds2D bounds = GetCameraBounds();
         float radius = 1;
-        float x = Random.Range(bounds.min.x + spawnPadding, bounds.max.x - spawnPadding);
+        float centerX = (bounds.min.x + bounds.max.x) * 0.5f;
+        float halfSpawnWidth = Mathf.Max(0.05f, (bounds.max.x - bounds.min.x - spawnPadding * 2f) * spawnHorizontalFraction * 0.5f);
+        float x = Random.Range(centerX - halfSpawnWidth, centerX + halfSpawnWidth);
         float y = bounds.min.y - radius - 0.35f;
 
         bool spawnBomb = ShouldSpawnBomb();
@@ -313,36 +325,55 @@ public class FruitNinjaMinigame : MinigameBase
         });
     }
 
-    private void UpdatePointer()
+    private void UpdatePointer(float dt)
     {
         if (!TryGetPointerWorld(out Vector2 current))
         {
             _hasPreviousPoint = false;
+            _hasActiveSliceStroke = false;
             return;
         }
 
+        Vector2 currentScreen = Input.mousePosition;
         if (!_hasPreviousPoint)
         {
             _previousPoint = current;
+            _previousScreenPoint = currentScreen;
             _hasPreviousPoint = true;
-            SliceAtPoint(current, _lastSliceDirection);
             return;
         }
 
         Vector2 segment = current - _previousPoint;
         float distance = segment.magnitude;
-        if (distance >= minSliceDistance)
+        float speed = dt > 0f ? distance / dt : 0f;
+        Vector2 screenSegment = currentScreen - _previousScreenPoint;
+        float screenDistance = screenSegment.magnitude;
+        float screenSpeed = dt > 0f ? screenDistance / dt : 0f;
+        bool fastEnough = distance >= minSliceDistance
+            && speed >= minSliceSpeed
+            && screenDistance >= minSliceScreenDistance
+            && screenSpeed >= minSliceScreenSpeed;
+
+        if (fastEnough)
         {
+            if (!_hasActiveSliceStroke)
+            {
+                _sliceStrokeStart = _previousPoint;
+                _hasActiveSliceStroke = true;
+            }
+
             _lastSliceDirection = segment.normalized;
             SliceAlongSegment(_previousPoint, current, _lastSliceDirection);
-            ShowTrail(_previousPoint, current);
+            SliceAlongSegment(_sliceStrokeStart, current, _lastSliceDirection);
+            ShowTrail(_sliceStrokeStart, current);
         }
         else
         {
-            SliceAtPoint(current, _lastSliceDirection);
+            _hasActiveSliceStroke = false;
         }
 
         _previousPoint = current;
+        _previousScreenPoint = currentScreen;
     }
 
     private bool TryGetPointerWorld(out Vector2 worldPoint)
@@ -372,23 +403,6 @@ public class FruitNinjaMinigame : MinigameBase
         return true;
     }
 
-    private void SliceAtPoint(Vector2 point, Vector2 sliceDir)
-    {
-        for (int i = _fruits.Count - 1; i >= 0; i--)
-        {
-            FruitBody fruit = _fruits[i];
-            if (fruit == null || fruit.transform == null) continue;
-
-            Vector2 center = fruit.transform.position;
-            float hitRadius = fruit.radius + sliceHitPadding;
-            if ((center - point).sqrMagnitude > hitRadius * hitRadius) continue;
-
-            _fruits.RemoveAt(i);
-            SliceFruit(fruit, GetValidSliceDirection(sliceDir), point);
-            if (!_fruitRunning) return;
-        }
-    }
-
     private void SliceAlongSegment(Vector2 from, Vector2 to, Vector2 sliceDir)
     {
         sliceDir = GetValidSliceDirection(sliceDir);
@@ -397,15 +411,51 @@ public class FruitNinjaMinigame : MinigameBase
             FruitBody fruit = _fruits[i];
             if (fruit == null || fruit.transform == null) continue;
 
-            Vector2 center = fruit.transform.position;
-            Vector2 closest = ClosestPointOnSegment(center, from, to);
-            float hitRadius = fruit.radius + sliceHitPadding;
-            if ((center - closest).sqrMagnitude > hitRadius * hitRadius) continue;
+            if (!TryGetValidSliceHit(fruit, from, to, out Vector2 hitPoint)) continue;
 
             _fruits.RemoveAt(i);
-            SliceFruit(fruit, sliceDir, closest);
+            SliceFruit(fruit, sliceDir, hitPoint);
             if (!_fruitRunning) return;
         }
+    }
+
+    private bool TryGetValidSliceHit(FruitBody fruit, Vector2 from, Vector2 to, out Vector2 hitPoint)
+    {
+        hitPoint = default;
+        if (fruit == null || fruit.transform == null)
+            return false;
+
+        Vector2 center = fruit.transform.position;
+        Vector2 segment = to - from;
+        float segmentLength = segment.magnitude;
+        if (segmentLength < 0.0001f)
+            return false;
+
+        float radius = Mathf.Max(0.001f, fruit.radius + sliceHitPadding);
+        float minChordLength = radius * 2f * minSliceChordFraction;
+
+        Vector2 direction = segment / segmentLength;
+        Vector2 fromToCenter = from - center;
+        float b = Vector2.Dot(fromToCenter, direction);
+        float c = Vector2.Dot(fromToCenter, fromToCenter) - radius * radius;
+        float discriminant = b * b - c;
+        if (discriminant < 0f)
+            return false;
+
+        float root = Mathf.Sqrt(discriminant);
+        float enterDistance = -b - root;
+        float exitDistance = -b + root;
+        float clippedEnter = Mathf.Clamp(enterDistance, 0f, segmentLength);
+        float clippedExit = Mathf.Clamp(exitDistance, 0f, segmentLength);
+        if (clippedExit <= clippedEnter)
+            return false;
+
+        float chordLength = clippedExit - clippedEnter;
+        if (chordLength < minChordLength)
+            return false;
+
+        hitPoint = from + direction * ((clippedEnter + clippedExit) * 0.5f);
+        return true;
     }
 
     private void SliceFruit(FruitBody fruit, Vector2 sliceDir, Vector2 hitPoint)

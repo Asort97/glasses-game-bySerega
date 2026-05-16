@@ -36,6 +36,7 @@ public class TicTacToeBoard : MonoBehaviour
     [SerializeField] private Camera boardCamera;          // RightGameCamera
     [SerializeField] private Transform lensTransform;     // Lens2 (с MeshCollider)
     [SerializeField] private Transform marksParent;       // куда спавнить спрайты (по умолчанию — self)
+    [SerializeField] private Transform boardTransform;    // центр спрайта сетки TicTacToeATL_0
 
     [Header("Sprites")]
     [SerializeField] private Sprite spriteX;              // TicTacToeATL_2
@@ -50,6 +51,8 @@ public class TicTacToeBoard : MonoBehaviour
     [SerializeField] private float cellSpacing = 1.93f;
     [Tooltip("Сторона квадратной зоны клика по клетке. ≤0 = равно cellSpacing.")]
     [SerializeField] private float cellHitSize = 1.5f;
+    [SerializeField] private bool invertClickX = false;
+    [SerializeField] private bool invertClickY = false;
 
     [Header("Scenarios")]
     [SerializeField] private Scenario[] scenarios;
@@ -59,6 +62,11 @@ public class TicTacToeBoard : MonoBehaviour
     [SerializeField] private float advanceDelay = 1f;
 
     private MeshCollider _lensCollider;
+    private MeshFilter _lensMeshFilter;
+    private Bounds _lensLocalBounds;
+    private int _uAxis = 0;
+    private int _vAxis = 1;
+    private int _normalAxis = 2;
     private int _current = -1;
     private bool _finished;
     private bool _advancing;
@@ -91,6 +99,8 @@ public class TicTacToeBoard : MonoBehaviour
             var go = GameObject.Find("RightGameCamera");
             if (go != null) boardCamera = go.GetComponent<Camera>();
         }
+        if (boardTransform == null)
+            boardTransform = transform.Find("TicTacToeATL_0");
     }
 
     private void EnsureLensCollider()
@@ -98,15 +108,18 @@ public class TicTacToeBoard : MonoBehaviour
         if (lensTransform == null)
             return;
 
-        MeshFilter meshFilter = lensTransform.GetComponent<MeshFilter>();
-        if (meshFilter == null || meshFilter.sharedMesh == null)
+        _lensMeshFilter = lensTransform.GetComponent<MeshFilter>();
+        if (_lensMeshFilter == null || _lensMeshFilter.sharedMesh == null)
             return;
+
+        _lensLocalBounds = _lensMeshFilter.sharedMesh.bounds;
+        ConfigureLensMapping(_lensLocalBounds.size);
 
         _lensCollider = lensTransform.GetComponent<MeshCollider>();
         if (_lensCollider == null)
             _lensCollider = lensTransform.gameObject.AddComponent<MeshCollider>();
 
-        _lensCollider.sharedMesh = meshFilter.sharedMesh;
+        _lensCollider.sharedMesh = _lensMeshFilter.sharedMesh;
         _lensCollider.convex = false;
     }
 
@@ -129,7 +142,7 @@ public class TicTacToeBoard : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (!_lensCollider.Raycast(ray, out RaycastHit hit, 1000f)) return;
 
-        int idx = UvToCellIndex(hit.textureCoord);
+        int idx = UvToCellIndex(GetUvFromLensHit(hit.point));
         if (idx < 0) return;
 
         var sc = scenarios[_current];
@@ -169,8 +182,9 @@ public class TicTacToeBoard : MonoBehaviour
         Sprite sprite = mark == Mark.X ? spriteX : spriteO;
         if (sprite == null) return;
 
-        float x = boardCenter.x + (col - 1) * cellSpacing;
-        float y = boardCenter.y + (1 - row) * cellSpacing;
+        Vector2 center = GetBoardCenter();
+        float x = center.x + (col - 1) * cellSpacing;
+        float y = center.y + (1 - row) * cellSpacing;
 
         var go = new GameObject($"Mark_{row}_{col}_{mark}");
         go.transform.SetParent(marksParent, true);
@@ -250,12 +264,13 @@ public class TicTacToeBoard : MonoBehaviour
 
         int bestIdx = -1;
         float bestSqr = float.MaxValue;
+        Vector2 center = GetBoardCenter();
         for (int r = 0; r < 3; r++)
         {
             for (int c = 0; c < 3; c++)
             {
-                float wx = boardCenter.x + (c - 1) * cellSpacing;
-                float wy = boardCenter.y + (1 - r) * cellSpacing;
+                float wx = center.x + (c - 1) * cellSpacing;
+                float wy = center.y + (1 - r) * cellSpacing;
                 Vector3 vp = boardCamera.WorldToViewportPoint(new Vector3(wx, wy, 0f));
                 float dx = Mathf.Abs(uv.x - vp.x);
                 float dy = Mathf.Abs(uv.y - vp.y);
@@ -265,5 +280,66 @@ public class TicTacToeBoard : MonoBehaviour
             }
         }
         return bestIdx;
+    }
+
+    private Vector2 GetBoardCenter()
+    {
+        if (boardTransform != null)
+            return boardTransform.position;
+
+        return boardCenter;
+    }
+
+    private void ConfigureLensMapping(Vector3 size)
+    {
+        _normalAxis = GetSmallestAxis(size);
+
+        int index = 0;
+        for (int axis = 0; axis < 3; axis++)
+        {
+            if (axis == _normalAxis) continue;
+
+            if (index == 0) _uAxis = axis;
+            else _vAxis = axis;
+            index++;
+        }
+    }
+
+    private Vector2 GetUvFromLensHit(Vector3 worldPoint)
+    {
+        if (lensTransform == null || _lensMeshFilter == null)
+            return Vector2.zero;
+
+        Vector3 localPoint = lensTransform.InverseTransformPoint(worldPoint);
+
+        float minU = GetAxisValue(_lensLocalBounds.min, _uAxis);
+        float maxU = GetAxisValue(_lensLocalBounds.max, _uAxis);
+        float minV = GetAxisValue(_lensLocalBounds.min, _vAxis);
+        float maxV = GetAxisValue(_lensLocalBounds.max, _vAxis);
+
+        float u = Mathf.InverseLerp(minU, maxU, GetAxisValue(localPoint, _uAxis));
+        float v = Mathf.InverseLerp(minV, maxV, GetAxisValue(localPoint, _vAxis));
+
+        if (invertClickX) u = 1f - u;
+        if (invertClickY) v = 1f - v;
+
+        return new Vector2(Mathf.Clamp01(u), Mathf.Clamp01(v));
+    }
+
+    private static int GetSmallestAxis(Vector3 value)
+    {
+        if (value.x <= value.y && value.x <= value.z) return 0;
+        if (value.y <= value.z) return 1;
+        return 2;
+    }
+
+    private static float GetAxisValue(Vector3 value, int axis)
+    {
+        switch (axis)
+        {
+            case 0: return value.x;
+            case 1: return value.y;
+            default: return value.z;
+        }
     }
 }
