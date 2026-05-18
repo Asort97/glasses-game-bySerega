@@ -9,7 +9,7 @@ public class RingsMinigame : MinigameBase
 {
     private Ring[]    _rings;
     private int       _remaining;
-    private bool      _running;
+    private bool      _ringsRunning;
     private float     _elapsed;
 
     // Игрок — объект с компонентом Player среди дочерних
@@ -29,7 +29,7 @@ public class RingsMinigame : MinigameBase
     public override void StartGame()
     {
         _elapsed   = 0f;
-        _running   = true;
+        _ringsRunning = true;
         Progress   = 1f;
 
         // Сбросить позицию игрока на стартовую
@@ -53,14 +53,14 @@ public class RingsMinigame : MinigameBase
 
         if (_remaining == 0)
         {
-            _running = false;
+            _ringsRunning = false;
             RaiseWin();
         }
     }
 
     public override void StopGame()
     {
-        _running = false;
+        _ringsRunning = false;
         if (_rings != null)
         {
             foreach (var ring in _rings)
@@ -70,14 +70,14 @@ public class RingsMinigame : MinigameBase
 
     protected override void Update()
     {
-        if (!_running) return;
+        if (!_ringsRunning) return;
 
         _elapsed += Time.deltaTime;
         Progress  = 1f - Mathf.Clamp01(_elapsed / surviveTime);
 
         if (_elapsed >= surviveTime)
         {
-            _running = false;
+            _ringsRunning = false;
             RaiseLose();
         }
     }
@@ -87,7 +87,7 @@ public class RingsMinigame : MinigameBase
         _remaining--;
         if (_remaining <= 0)
         {
-            _running = false;
+            _ringsRunning = false;
             RaiseWin();
         }
     }
