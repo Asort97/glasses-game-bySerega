@@ -120,7 +120,7 @@ MonoBehaviour:
   m_Active: 1
   settings:
     renderPassEvent: 600
-    leftColor: {r: 0, g: 1, b: 0.44627285, a: 1}
+    leftColor: {r: 0, g: 1, b: 0.5372549, a: 1}
     rightColor: {r: 1, g: 0.15662651, b: 0, a: 1}
     strength: 0.0175
     excludedLayers:
