@@ -7,9 +7,11 @@ using UnityEngine;
 public abstract class MinigameBase : MonoBehaviour
 {
     [SerializeField] protected float surviveTime = 10f;
+    [SerializeField] private Sprite previewTitleSprite;
 
     /// <summary>0 = пусто, 1 = полный таймер</summary>
     public float Progress { get; protected set; } = 1f;
+    public Sprite PreviewTitleSprite => previewTitleSprite != null ? previewTitleSprite : GetFallbackPreviewSprite();
 
     public event System.Action OnWin;
     public event System.Action OnLose;
@@ -47,4 +49,10 @@ public abstract class MinigameBase : MonoBehaviour
 
     protected void RaiseWin()  => OnWin?.Invoke();
     protected void RaiseLose() => OnLose?.Invoke();
+
+    private Sprite GetFallbackPreviewSprite()
+    {
+        SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>(true);
+        return sr != null ? sr.sprite : null;
+    }
 }

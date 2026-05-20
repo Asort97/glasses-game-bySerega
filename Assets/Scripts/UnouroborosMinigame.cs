@@ -8,7 +8,8 @@ public class UnouroborosMinigame : MinigameBase
     [SerializeField] private Transform borderTransform;
 
     [Header("Snake")]
-    [SerializeField] private float stepInterval = 0.9f;
+    [SerializeField] private Vector3 startLocalPosition = new Vector3(0.899999976f, 1.39600003f, 0f);
+    [SerializeField] private float stepInterval = 1f;
     [SerializeField] private float cellSize = 0.6f;
     [SerializeField] private float borderTouchRadius = 0.04f;
     [SerializeField] private bool startWithoutActiveManager = true;
@@ -17,7 +18,7 @@ public class UnouroborosMinigame : MinigameBase
     private readonly HashSet<Vector2Int> _occupiedCells = new HashSet<Vector2Int>();
 
     private Collider2D[] _borderColliders;
-    private Vector3 _startLocalPosition;
+    private SpriteRenderer _segmentRenderer;
     private Vector2Int _headCell;
     private Vector2Int _lastMoveDirection;
     private Vector2Int _queuedDirection;
@@ -25,18 +26,15 @@ public class UnouroborosMinigame : MinigameBase
     private float _elapsed;
     private float _stepTimer;
     private bool _unouroborosRunning;
-    private bool _hasStartPosition;
 
     private void Awake()
     {
         ResolveRefs();
-        CacheStartPosition();
     }
 
     private void OnEnable()
     {
         ResolveRefs();
-        CacheStartPosition();
     }
 
     private void Start()
@@ -50,7 +48,6 @@ public class UnouroborosMinigame : MinigameBase
         base.StartGame();
 
         ResolveRefs();
-        CacheStartPosition();
         ClearRuntimeSegments();
 
         _elapsed = 0f;
@@ -67,7 +64,7 @@ public class UnouroborosMinigame : MinigameBase
         if (snakeSegmentTemplate != null)
         {
             snakeSegmentTemplate.gameObject.SetActive(true);
-            snakeSegmentTemplate.localPosition = _startLocalPosition;
+            snakeSegmentTemplate.localPosition = startLocalPosition;
         }
     }
 
@@ -81,7 +78,7 @@ public class UnouroborosMinigame : MinigameBase
         if (snakeSegmentTemplate != null)
         {
             snakeSegmentTemplate.gameObject.SetActive(true);
-            snakeSegmentTemplate.localPosition = _startLocalPosition;
+            snakeSegmentTemplate.localPosition = startLocalPosition;
         }
 
         base.StopGame();
@@ -129,7 +126,7 @@ public class UnouroborosMinigame : MinigameBase
             return;
         }
 
-        Vector3 nextLocalPosition = _startLocalPosition + new Vector3(nextCell.x * cellSize, nextCell.y * cellSize, 0f);
+        Vector3 nextLocalPosition = startLocalPosition + new Vector3(nextCell.x * cellSize, nextCell.y * cellSize, 0f);
         if (TouchesBorder(nextLocalPosition))
         {
             _unouroborosRunning = false;
@@ -211,21 +208,14 @@ public class UnouroborosMinigame : MinigameBase
     {
         if (snakeSegmentTemplate == null)
             snakeSegmentTemplate = transform.Find("Snake_snakeStart");
+        if (snakeSegmentTemplate != null)
+            _segmentRenderer = snakeSegmentTemplate.GetComponent<SpriteRenderer>();
 
         if (borderTransform == null)
             borderTransform = transform.Find("Border");
 
         if (borderTransform != null)
             _borderColliders = borderTransform.GetComponents<Collider2D>();
-    }
-
-    private void CacheStartPosition()
-    {
-        if (_hasStartPosition || snakeSegmentTemplate == null)
-            return;
-
-        _startLocalPosition = snakeSegmentTemplate.localPosition;
-        _hasStartPosition = true;
     }
 
     private bool HasActiveManager()
@@ -239,8 +229,7 @@ public class UnouroborosMinigame : MinigameBase
         if (_borderColliders == null || _borderColliders.Length == 0 || snakeSegmentTemplate == null)
             return false;
 
-        Transform parent = snakeSegmentTemplate.parent != null ? snakeSegmentTemplate.parent : transform;
-        Vector2 worldPoint = parent.TransformPoint(segmentLocalPosition);
+        Bounds segmentBounds = GetSegmentWorldBounds(segmentLocalPosition);
         float touchRadius = Mathf.Max(0f, borderTouchRadius);
 
         for (int i = 0; i < _borderColliders.Length; i++)
@@ -249,11 +238,28 @@ public class UnouroborosMinigame : MinigameBase
             if (borderCollider == null || !borderCollider.enabled)
                 continue;
 
-            Vector2 closest = borderCollider.ClosestPoint(worldPoint);
-            if ((closest - worldPoint).sqrMagnitude <= touchRadius * touchRadius)
+            Bounds borderBounds = borderCollider.bounds;
+            borderBounds.Expand(touchRadius * 2f);
+            if (borderBounds.Intersects(segmentBounds))
                 return true;
         }
 
         return false;
+    }
+
+    private Bounds GetSegmentWorldBounds(Vector3 segmentLocalPosition)
+    {
+        Transform parent = snakeSegmentTemplate.parent != null ? snakeSegmentTemplate.parent : transform;
+        Vector3 worldCenter = parent.TransformPoint(segmentLocalPosition);
+
+        if (_segmentRenderer != null)
+        {
+            Bounds bounds = _segmentRenderer.bounds;
+            bounds.center = worldCenter;
+            return bounds;
+        }
+
+        Vector3 worldSize = parent.TransformVector(new Vector3(cellSize, cellSize, 0f));
+        return new Bounds(worldCenter, new Vector3(Mathf.Abs(worldSize.x), Mathf.Abs(worldSize.y), 0.01f));
     }
 }
