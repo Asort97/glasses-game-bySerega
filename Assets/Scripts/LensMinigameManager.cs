@@ -11,6 +11,7 @@ using UnityEngine.UI;
 public class LensMinigameManager : MonoBehaviour
 {
     [SerializeField] private MinigameBase[] minigames;
+    [SerializeField] private GameObject     timerFillParent;
     [SerializeField] private Image          timerFill;
     [SerializeField] private GameObject     previewTitle;
     [SerializeField] private float          blankDelay = 0.5f;
@@ -25,12 +26,30 @@ public class LensMinigameManager : MonoBehaviour
     private SpriteRenderer   _previewSpriteRenderer;
     private Image            _previewImage;
     private Coroutine        _switchRoutine;
+    private bool             _started;
 
     private void Start()
+    {
+        Begin();
+    }
+
+    public void Begin(bool restart = false)
     {
         _health = GetComponent<LensHealthSystem>();
         ResolvePreviewTitle();
         HidePreviewTitle();
+
+        timerFillParent.SetActive(false);
+
+        if (_started && !restart)
+        {
+            if (!_paused && _current == null && _switchRoutine == null)
+                QueueNext();
+            return;
+        }
+
+        _started = true;
+        StopSwitchRoutine();
 
         // Скрываем все мини-игры
         foreach (var mg in minigames)
@@ -222,6 +241,7 @@ public class LensMinigameManager : MonoBehaviour
         if (_previewImage != null)
             _previewImage.sprite = sprite;
 
+        timerFillParent.SetActive(sprite != null);
         previewTitle.SetActive(sprite != null);
     }
 
@@ -230,6 +250,7 @@ public class LensMinigameManager : MonoBehaviour
         if (previewTitle == null)
             ResolvePreviewTitle();
         if (previewTitle != null)
+            timerFillParent.SetActive(true);
             previewTitle.SetActive(false);
     }
 

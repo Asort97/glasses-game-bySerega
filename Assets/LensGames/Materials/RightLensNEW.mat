@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: RightLensNEW
-  m_Shader: {fileID: 4800000, guid: 650dd9526735d5b46b79224bc6e94025, type: 3}
+  m_Shader: {fileID: 4800000, guid: 9652c27e6b9c4aa489b6969984aeaa3d, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -50,7 +50,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 8400000, guid: 8c1ec2d140e1b814ebeaa29978eec71a, type: 2}
+        m_Texture: {fileID: 8400000, guid: 4662171fa224b754697492d77a9e4d2e, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -90,6 +90,8 @@ Material:
     - _BlendModePreserveSpecular: 1
     - _BlendOp: 0
     - _BumpScale: 1
+    - _CRTStrength: 0
+    - _ChromaKeyTolerance: 0.21
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _Cull: 2
@@ -98,28 +100,45 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
+    - _EffectStrength: 0.835
     - _EnvironmentReflections: 0
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _HorizontalBleed: 0.2
+    - _LineCount: 447
+    - _LineDarkness: 1
+    - _LineSharpness: 0.025
+    - _LineThickness: 0.278
     - _Metallic: 0
+    - _NoiseStrength: 0.035
     - _OcclusionStrength: 1
     - _Parallax: 0.005
+    - _PhosphorStrength: 0.15
     - _QueueOffset: 0
+    - _RGBOffset: 0.003
     - _ReceiveShadows: 0
     - _SampleGI: 0
+    - _ScanlineCount: 160
+    - _ScanlineDarkness: 0.45
+    - _ScanlineThickness: 0.28
     - _Smoothness: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 0
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
+    - _TintStrength: 0.25
+    - _VignetteStrength: 0.1
+    - _WarpStrength: 0
     - _WorkflowMode: 0
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ChromaKeyColor: {r: 1, g: 0, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _ScreenTint: {r: 0.9, g: 1, b: 0.82, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

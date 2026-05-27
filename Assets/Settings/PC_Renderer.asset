@@ -28,7 +28,8 @@ MonoBehaviour:
   - {fileID: 7833122117494664109}
   - {fileID: 424242424242424242}
   - {fileID: 8911001305281039425}
-  m_RendererFeatureMap: 9471feffffffffff
+  - {fileID: 6611729570168491222}
+  m_RendererFeatureMap: 9471feffffffffffd6ccd67c0395c15b
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -70,6 +71,30 @@ MonoBehaviour:
   settings:
     keyColor: {r: 1, g: 0, b: 1, a: 1}
     glowThreshold: 0.01
+--- !u!114 &6611729570168491222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 883c6b96e3d11ac428403317cb0a03da, type: 3}
+  m_Name: SideStaticNoise
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    renderPassEvent: 600
+    leftAmount: 0
+    rightAmount: 0.6
+    edgeSoftness: 0.36
+    edgeRoughness: 0.28
+    intensity: 1
+    noiseScale: 5
+    noiseSpeed: 20
+    blackDensity: 0.38
+    whiteBoost: 0.85
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0

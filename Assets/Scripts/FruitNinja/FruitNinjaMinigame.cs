@@ -13,7 +13,6 @@ public class FruitNinjaMinigame : MinigameBase
     [SerializeField] private Transform lensTransform;
 
     [Header("Rules")]
-    [SerializeField] private int requiredSlices = 8;
     [SerializeField] private float spawnIntervalMin = 0.65f;
     [SerializeField] private float spawnIntervalMax = 1.05f;
     [SerializeField] private float minSliceDistance = 0.035f;
@@ -68,7 +67,6 @@ public class FruitNinjaMinigame : MinigameBase
     private float _trailAge;
     private float _elapsed;
     private float _spawnTimer;
-    private int _sliced;
 
     private sealed class FruitBody
     {
@@ -113,7 +111,6 @@ public class FruitNinjaMinigame : MinigameBase
 
         _fruitRunning = true;
         _elapsed = 0f;
-        _sliced = 0;
         _spawnTimer = 0.15f;
         _hasPreviousPoint = false;
         _hasActiveSliceStroke = false;
@@ -140,18 +137,16 @@ public class FruitNinjaMinigame : MinigameBase
 
         UpdateSpawning(dt);
         UpdatePointer(dt);
+        if (!_fruitRunning) return;
+
         UpdateFruits(dt);
+        if (!_fruitRunning) return;
+
         UpdatePieces(dt);
         UpdateTrail(dt);
 
-        if (_sliced >= requiredSlices)
-        {
-            Finish(true);
-            return;
-        }
-
         if (_elapsed >= surviveTime)
-            Finish(false);
+            Finish(true);
     }
 
     private void ResolveRefs()
@@ -467,8 +462,6 @@ public class FruitNinjaMinigame : MinigameBase
             Finish(false);
             return;
         }
-
-        _sliced++;
 
         Vector2 worldNormal = new Vector2(-sliceDir.y, sliceDir.x).normalized;
         Vector3 localNormal3 = fruit.transform.InverseTransformVector(new Vector3(worldNormal.x, worldNormal.y, 0f));
