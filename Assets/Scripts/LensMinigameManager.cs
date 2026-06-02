@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,7 @@ using UnityEngine.UI;
 /// </summary>
 public class LensMinigameManager : MonoBehaviour
 {
+    [SerializeField] private MinigameBase startMinigame;
     [SerializeField] private MinigameBase[] minigames;
     [SerializeField] private GameObject     timerFillParent;
     [SerializeField] private Image          timerFill;
@@ -27,6 +29,7 @@ public class LensMinigameManager : MonoBehaviour
     private Image            _previewImage;
     private Coroutine        _switchRoutine;
     private bool             _started;
+    private bool             _startMinigamePlayed;
 
     private void Start()
     {
@@ -39,7 +42,8 @@ public class LensMinigameManager : MonoBehaviour
         ResolvePreviewTitle();
         HidePreviewTitle();
 
-        timerFillParent.SetActive(false);
+        if (timerFillParent != null)
+            timerFillParent.SetActive(false);
 
         if (_started && !restart)
         {
@@ -50,10 +54,11 @@ public class LensMinigameManager : MonoBehaviour
 
         _started = true;
         StopSwitchRoutine();
+        _startMinigamePlayed = false;
+        _lastIdx = -1;
 
         // Скрываем все мини-игры
-        foreach (var mg in minigames)
-            if (mg != null) mg.gameObject.SetActive(false);
+        HideConfiguredMinigames();
 
         BuildOrder(-1);
         QueueNext();
@@ -92,18 +97,21 @@ public class LensMinigameManager : MonoBehaviour
         }
     }
 
-    private void QueueNext()
+    private void QueueNext(bool showPreview = true)
     {
         StopSwitchRoutine();
-        _switchRoutine = StartCoroutine(SwitchToNextRoutine());
+        _switchRoutine = StartCoroutine(SwitchToNextRoutine(showPreview));
     }
 
-    private IEnumerator SwitchToNextRoutine()
+    private IEnumerator SwitchToNextRoutine(bool showPreview)
     {
         HideAllMinigames();
         HidePreviewTitle();
 
-        yield return new WaitForSeconds(blankDelay);
+        if (showPreview)
+            yield return new WaitForSeconds(blankDelay);
+        else
+            yield return null;
 
         if (_paused) yield break;
 
@@ -111,11 +119,14 @@ public class LensMinigameManager : MonoBehaviour
         if (next == null)
             yield break;
 
-        ShowPreviewTitle(next.PreviewTitleSprite);
-        yield return new WaitForSeconds(previewDuration);
+        if (showPreview)
+        {
+            ShowPreviewTitle(next.PreviewTitleSprite);
+            yield return new WaitForSeconds(previewDuration);
 
-        HidePreviewTitle();
-        if (_paused) yield break;
+            HidePreviewTitle();
+            if (_paused) yield break;
+        }
 
         StartMinigame(next);
         _switchRoutine = null;
@@ -123,6 +134,14 @@ public class LensMinigameManager : MonoBehaviour
 
     private MinigameBase PickNext()
     {
+        MinigameBase first = ResolveStartMinigame();
+        if (!_startMinigamePlayed && first != null)
+        {
+            _startMinigamePlayed = true;
+            Detach(_current);
+            return first;
+        }
+
         if (minigames == null || minigames.Length == 0)
         {
             Debug.LogError($"[{nameof(LensMinigameManager)}] No minigames assigned on {name}.", this);
@@ -142,6 +161,9 @@ public class LensMinigameManager : MonoBehaviour
                 BuildOrder(_lastIdx);
 
             if (idx < 0 || idx >= minigames.Length || minigames[idx] == null)
+                continue;
+
+            if (minigames[idx] == first)
                 continue;
 
             _lastIdx = idx;
@@ -174,6 +196,8 @@ public class LensMinigameManager : MonoBehaviour
     {
         MinigameBase finished = _current;
         Detach(finished);
+        bool finishedWasStartMinigame = finished != null && finished == ResolveStartMinigame();
+
         if (finished != null)
         {
             finished.StopGame();
@@ -188,7 +212,7 @@ public class LensMinigameManager : MonoBehaviour
             if (_paused) return;
         }
 
-        QueueNext();
+        QueueNext(!finishedWasStartMinigame);
     }
 
     private void StopSwitchRoutine()
@@ -200,6 +224,20 @@ public class LensMinigameManager : MonoBehaviour
 
     private void HideAllMinigames()
     {
+        HideConfiguredMinigames();
+        _current = null;
+    }
+
+    private void HideConfiguredMinigames()
+    {
+        MinigameBase first = ResolveStartMinigame();
+        if (first != null)
+        {
+            Detach(first);
+            first.StopGame();
+            first.gameObject.SetActive(false);
+        }
+
         if (minigames == null) return;
 
         foreach (var mg in minigames)
@@ -210,8 +248,6 @@ public class LensMinigameManager : MonoBehaviour
             mg.StopGame();
             mg.gameObject.SetActive(false);
         }
-
-        _current = null;
     }
 
     private void ResolvePreviewTitle()
@@ -241,7 +277,8 @@ public class LensMinigameManager : MonoBehaviour
         if (_previewImage != null)
             _previewImage.sprite = sprite;
 
-        timerFillParent.SetActive(sprite != null);
+        if (timerFillParent != null)
+            timerFillParent.SetActive(sprite != null);
         previewTitle.SetActive(sprite != null);
     }
 
@@ -250,8 +287,11 @@ public class LensMinigameManager : MonoBehaviour
         if (previewTitle == null)
             ResolvePreviewTitle();
         if (previewTitle != null)
-            timerFillParent.SetActive(true);
+        {
+            if (timerFillParent != null)
+                timerFillParent.SetActive(true);
             previewTitle.SetActive(false);
+        }
     }
 
     private void Detach(MinigameBase mg)
@@ -274,8 +314,15 @@ public class LensMinigameManager : MonoBehaviour
             return;
         }
 
-        _order = new int[minigames.Length];
-        for (int i = 0; i < _order.Length; i++) _order[i] = i;
+        MinigameBase first = ResolveStartMinigame();
+        List<int> playableIndices = new List<int>(minigames.Length);
+        for (int i = 0; i < minigames.Length; i++)
+        {
+            if (minigames[i] != null && minigames[i] != first)
+                playableIndices.Add(i);
+        }
+
+        _order = playableIndices.ToArray();
 
         // Fisher-Yates shuffle
         for (int i = _order.Length - 1; i > 0; i--)
@@ -294,5 +341,25 @@ public class LensMinigameManager : MonoBehaviour
             _order[0]    = _order[swap];
             _order[swap] = tmp;
         }
+    }
+
+    private MinigameBase ResolveStartMinigame()
+    {
+        if (startMinigame != null)
+            return startMinigame;
+
+        if (minigames == null)
+            return null;
+
+        foreach (MinigameBase minigame in minigames)
+        {
+            if (minigame is GameStartMinigame)
+            {
+                startMinigame = minigame;
+                return startMinigame;
+            }
+        }
+
+        return null;
     }
 }
