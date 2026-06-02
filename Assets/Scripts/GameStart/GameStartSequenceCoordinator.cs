@@ -117,7 +117,9 @@ public class GameStartSequenceCoordinator : MonoBehaviour
             if (icon == null)
                 continue;
 
-            icon.SetActive(true);
+            if (!icon.activeSelf)
+                continue;
+
             yield return AnimateScale(icon.transform, GetStartScale(icon.transform), Vector3.zero, menuIconHideDuration);
             icon.SetActive(false);
             yield return WaitSequence(menuIconHideInterval);
@@ -256,9 +258,9 @@ public class GameStartSequenceCoordinator : MonoBehaviour
                 if (icon == null)
                     continue;
 
-                icon.SetActive(true);
                 icon.transform.localScale = GetStartScale(icon.transform);
                 SetGraphicsAlpha(icon, 1f);
+                icon.SetActive(false);
             }
         }
 
