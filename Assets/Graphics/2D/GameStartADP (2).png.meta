@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 40078fb2063444b418e92c04d27f8b03
+guid: aa1d486b0e1a0ce4ab4234379204e0ee
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: GameStartADP_0
+      name: GameStartADP (2)_0
       rect:
         serializedVersion: 2
         x: 1
@@ -125,20 +125,42 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3012121fd413874428e28b4527115d96
-      internalID: -1465771630
+      spriteID: 77057011a71ef76499e6fa224b14dd14
+      internalID: -493614496
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: GameStartADP_1
+      name: GameStartADP (2)_1
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 10
+        width: 11
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e9726977c93e43346916953a07f0c5e2
+      internalID: -1219554812
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameStartADP (2)_2
       rect:
         serializedVersion: 2
         x: 21
-        y: 11
-        width: 9
-        height: 9
+        y: 0
+        width: 10
+        height: 10
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -147,118 +169,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ca441fa64bbbd0545bd8767383478f93
-      internalID: 1432167041
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: GameStartADP_2
-      rect:
-        serializedVersion: 2
-        x: 22
-        y: 8
-        width: 1
-        height: 1
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: a8d19573fc1da334a8d82692408b7b55
-      internalID: -153274493
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: GameStartADP_3
-      rect:
-        serializedVersion: 2
-        x: 24
-        y: 7
-        width: 3
-        height: 3
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 400f5e78f201109448b4eb34b0bd2a0e
-      internalID: 1119805972
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: GameStartADP_4
-      rect:
-        serializedVersion: 2
-        x: 28
-        y: 8
-        width: 2
-        height: 2
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: abb68d83f73120b47b1c687701f8aa9c
-      internalID: -1531622122
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: GameStartADP_5
-      rect:
-        serializedVersion: 2
-        x: 26
-        y: 1
-        width: 4
-        height: 4
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 250690325dd60784792a8f0f39be18b6
-      internalID: 1204012807
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: GameStartADP_6
-      rect:
-        serializedVersion: 2
-        x: 22
-        y: 1
-        width: 3
-        height: 3
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: c71ac65421c3fa84b8e6318b2ad73ee7
-      internalID: -1714369845
+      spriteID: 9f9cb45d1750a6348802eb4c570e72e2
+      internalID: -127625175
       vertices: []
       indices: 
       edges: []
@@ -267,7 +179,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: c3346e7861e80114e8d64d065df2fab0
+    spriteID: a8d83d110063d234093220ecb826d3cc
     internalID: 0
     vertices: []
     indices: 
@@ -277,13 +189,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      GameStartADP_0: -1465771630
-      GameStartADP_1: 1432167041
-      GameStartADP_2: -153274493
-      GameStartADP_3: 1119805972
-      GameStartADP_4: -1531622122
-      GameStartADP_5: 1204012807
-      GameStartADP_6: -1714369845
+      GameStartADP (2)_0: -493614496
+      GameStartADP (2)_1: -1219554812
+      GameStartADP (2)_2: -127625175
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

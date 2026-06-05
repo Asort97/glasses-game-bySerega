@@ -66,7 +66,7 @@ public class LensMinigameManager : MonoBehaviour
 
     private void Update()
     {
-        if (_current != null && timerFill != null)
+        if (_current != null && !IsStartMinigame(_current) && timerFill != null)
             timerFill.fillAmount = _current.Progress;
         else if (timerFill != null)
             timerFill.fillAmount = 0f;
@@ -107,11 +107,9 @@ public class LensMinigameManager : MonoBehaviour
     {
         HideAllMinigames();
         HidePreviewTitle();
+        SetTimerVisible(false);
 
-        if (showPreview)
-            yield return new WaitForSeconds(blankDelay);
-        else
-            yield return null;
+        yield return null;
 
         if (_paused) yield break;
 
@@ -119,8 +117,11 @@ public class LensMinigameManager : MonoBehaviour
         if (next == null)
             yield break;
 
-        if (showPreview)
+        if (showPreview && !IsStartMinigame(next))
         {
+            yield return new WaitForSeconds(blankDelay);
+            if (_paused) yield break;
+
             ShowPreviewTitle(next.PreviewTitleSprite);
             yield return new WaitForSeconds(previewDuration);
 
@@ -186,6 +187,7 @@ public class LensMinigameManager : MonoBehaviour
         _current.OnWin  += HandleWin;
         _current.OnLose += HandleLose;
         _current.gameObject.SetActive(true);
+        SetTimerVisible(!IsStartMinigame(_current));
         _current.StartGame();
     }
 
@@ -212,7 +214,7 @@ public class LensMinigameManager : MonoBehaviour
             if (_paused) return;
         }
 
-        QueueNext(!finishedWasStartMinigame);
+        QueueNext();
     }
 
     private void StopSwitchRoutine()
@@ -277,8 +279,7 @@ public class LensMinigameManager : MonoBehaviour
         if (_previewImage != null)
             _previewImage.sprite = sprite;
 
-        if (timerFillParent != null)
-            timerFillParent.SetActive(sprite != null);
+        SetTimerVisible(sprite != null);
         previewTitle.SetActive(sprite != null);
     }
 
@@ -288,10 +289,19 @@ public class LensMinigameManager : MonoBehaviour
             ResolvePreviewTitle();
         if (previewTitle != null)
         {
-            if (timerFillParent != null)
-                timerFillParent.SetActive(true);
             previewTitle.SetActive(false);
         }
+    }
+
+    private void SetTimerVisible(bool visible)
+    {
+        if (timerFillParent != null)
+            timerFillParent.SetActive(visible);
+    }
+
+    private bool IsStartMinigame(MinigameBase minigame)
+    {
+        return minigame != null && minigame == ResolveStartMinigame();
     }
 
     private void Detach(MinigameBase mg)

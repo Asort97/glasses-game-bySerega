@@ -16,6 +16,11 @@ public class GameStartMinigame : MinigameBase
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float nearThreshold = 0.1f;
 
+    [Header("Random Start")]
+    [SerializeField] private bool randomizeCircleStart = true;
+    [SerializeField] private float randomStartMinDistance = 0.75f;
+    [SerializeField] private float randomStartMaxDistance = 1.55f;
+
     [Header("Right Lens Cursor")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Camera rightGameCamera;
@@ -68,8 +73,7 @@ public class GameStartMinigame : MinigameBase
         if (circle != null)
         {
             circle.DOKill();
-            if (_hasCircleStart)
-                circle.localPosition = _circleStartLocalPosition;
+            circle.localPosition = GetCircleStartPosition();
         }
     }
 
@@ -123,7 +127,9 @@ public class GameStartMinigame : MinigameBase
         Vector2 pos2 = new Vector2(circle.localPosition.x, circle.localPosition.y);
         if (pos2.sqrMagnitude <= nearThreshold * nearThreshold)
         {
-            bool confirmed = controlMode == ControlMode.RightLensCursor || Input.GetKeyDown(KeyCode.Space);
+            bool confirmed = controlMode == ControlMode.RightLensCursor
+                ? Input.GetMouseButtonDown(0)
+                : Input.GetKeyDown(KeyCode.Space);
             if (confirmed)
             {
                 _control = false;
@@ -155,6 +161,23 @@ public class GameStartMinigame : MinigameBase
 
         _circleStartLocalPosition = circle.localPosition;
         _hasCircleStart = true;
+    }
+
+    private Vector3 GetCircleStartPosition()
+    {
+        Vector3 startPosition = _hasCircleStart ? _circleStartLocalPosition : circle.localPosition;
+        if (!randomizeCircleStart)
+            return startPosition;
+
+        float minDistance = Mathf.Max(nearThreshold + 0.05f, randomStartMinDistance);
+        float maxDistance = Mathf.Max(minDistance, randomStartMaxDistance);
+        float angle = Random.Range(0f, Mathf.PI * 2f);
+        float distance = Random.Range(minDistance, maxDistance);
+
+        return new Vector3(
+            Mathf.Cos(angle) * distance,
+            Mathf.Sin(angle) * distance,
+            startPosition.z);
     }
 
     private void UpdateCircleFromRightLensCursor()
