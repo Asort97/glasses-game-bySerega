@@ -16,6 +16,8 @@ public class LensHealthSystem : MonoBehaviour
     [Header("Настройки")]
     [SerializeField] private LensButton activationButton = LensButton.Space;
     [SerializeField] private int maxHP = 3;
+    [SerializeField] private LensMinigameManager manager;
+    [SerializeField] private LensGameOverController gameOverController;
 
     [Header("Сердца UI")]
     [SerializeField] private HeartWidget[]  hearts;           // 3 сердца
@@ -25,10 +27,17 @@ public class LensHealthSystem : MonoBehaviour
     [Header("Линза")]
     [SerializeField] private Renderer lensRenderer;      // MeshRenderer на Lens1/Lens2
     [SerializeField] private string   colorProperty = "_BaseColor";
+    [SerializeField] private Renderer otherLensNoiseRenderer;
+    [SerializeField] private string   noiseStrengthProperty = "_TVNoiseStrength";
+    [SerializeField] private float    recoveryDuration = 5f;
 
-    private LensMinigameManager _manager;
     private int  _hp;
     private bool _broken;          // линза сейчас выключена
+    private bool _gameOver;
+    private float _recoveryTimer;
+    private Material _otherLensMaterial;
+
+    public bool IsBroken => _broken;
 
     // Восстановление
     private int  _pressCount;
@@ -38,14 +47,14 @@ public class LensHealthSystem : MonoBehaviour
 
     private void Awake()
     {
-        _manager = GetComponent<LensMinigameManager>();
-        _hp      = maxHP;
+        _hp = maxHP;
+        CacheOtherLensMaterial();
     }
 
     /// <summary>Вызывается из LensMinigameManager при поражении в мини-игре.</summary>
     public void OnLose()
     {
-        if (_broken) return;
+        if (_broken || _gameOver) return;
 
         _hp--;
         if (_hp < 0) _hp = 0;
@@ -58,20 +67,35 @@ public class LensHealthSystem : MonoBehaviour
         _broken = true;
         _pressCount = 0;
         _phase2     = false;
+        _recoveryTimer = 0f;
+        SetOtherLensNoise(0f);
 
         // Затемнить линзу
         SetLensColor(Color.black);
 
         // Остановить мини-игры
-        if (_manager != null) _manager.SetPaused(true);
+        if (manager != null) manager.SetPaused(true);
 
         // Все оставшиеся сердца -> Health_2
         RefreshHeartsUI();
+
+        if (gameOverController != null)
+            gameOverController.NotifyLensBroken(this);
     }
 
     private void Update()
     {
-        if (!_broken) return;
+        if (!_broken || _gameOver) return;
+
+        _recoveryTimer += Time.deltaTime;
+        SetOtherLensNoise(Mathf.Clamp01(_recoveryTimer / Mathf.Max(0.01f, recoveryDuration)));
+
+        if (_recoveryTimer >= recoveryDuration)
+        {
+            if (gameOverController != null)
+                gameOverController.TriggerGameOver();
+            return;
+        }
 
         bool pressed = activationButton == LensButton.Space
             ? Input.GetKeyDown(KeyCode.Space)
@@ -100,6 +124,8 @@ public class LensHealthSystem : MonoBehaviour
     private void RestoreLens()
     {
         _broken = false;
+        _recoveryTimer = 0f;
+        SetOtherLensNoise(0f);
         // _hp НЕ восстанавливается — потерянные сердца остаются потерянными
 
         // Вернуть белый цвет линзе
@@ -109,7 +135,18 @@ public class LensHealthSystem : MonoBehaviour
         RefreshHeartsUI();
 
         // Возобновить мини-игры
-        if (_manager != null) _manager.SetPaused(false);
+        if (manager != null) manager.SetPaused(false);
+
+        if (gameOverController != null)
+            gameOverController.NotifyLensRestored(this);
+    }
+
+    public void StopForGameOver()
+    {
+        _gameOver = true;
+        SetOtherLensNoise(0f);
+        if (manager != null)
+            manager.SetPaused(true);
     }
 
     private void RefreshHeartsUI()
@@ -157,5 +194,22 @@ public class LensHealthSystem : MonoBehaviour
             mat.SetColor(colorProperty, color);
         else if (mat.HasProperty("_Color"))
             mat.SetColor("_Color", color);
+    }
+
+    private void CacheOtherLensMaterial()
+    {
+        if (otherLensNoiseRenderer == null)
+            return;
+
+        _otherLensMaterial = otherLensNoiseRenderer.material;
+    }
+
+    private void SetOtherLensNoise(float value)
+    {
+        if (_otherLensMaterial == null)
+            CacheOtherLensMaterial();
+
+        if (_otherLensMaterial != null && _otherLensMaterial.HasProperty(noiseStrengthProperty))
+            _otherLensMaterial.SetFloat(noiseStrengthProperty, value);
     }
 }

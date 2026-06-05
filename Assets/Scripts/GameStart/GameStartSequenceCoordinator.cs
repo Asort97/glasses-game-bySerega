@@ -5,19 +5,15 @@ using UnityEngine.UI;
 
 public class GameStartSequenceCoordinator : MonoBehaviour
 {
-    private const string RuntimeObjectName = "GameStartSequenceCoordinator";
-
     [Header("Participants")]
     [SerializeField] private GameStartMinigame[] gameStarts;
     [SerializeField] private int requiredActivations = 2;
 
     [Header("Menu")]
     [SerializeField] private GameObject[] menuIcons;
-    [SerializeField] private string menuIconName = "test icon";
 
     [Header("Hearts")]
     [SerializeField] private GameObject[] heartsRoots;
-    [SerializeField] private string[] heartsRootNames = { "LeftLensHearts", "RightLensHearts" };
 
     [Header("Timing")]
     [SerializeField] private float menuIconHideDuration = 0.12f;
@@ -49,28 +45,11 @@ public class GameStartSequenceCoordinator : MonoBehaviour
     private bool _completed;
     private float _musicRampProgress;
 
-    public static GameStartSequenceCoordinator FindOrCreate()
-    {
-        GameStartSequenceCoordinator coordinator =
-            FindFirstObjectByType<GameStartSequenceCoordinator>(FindObjectsInactive.Include);
-        if (coordinator != null)
-            return coordinator;
-
-        GameObject obj = new GameObject(RuntimeObjectName);
-        return obj.AddComponent<GameStartSequenceCoordinator>();
-    }
-
-    private void Awake()
-    {
-        ResolveReferences();
-    }
-
     public void Register(GameStartMinigame gameStart)
     {
         if (gameStart != null)
             _registered.Add(gameStart);
 
-        ResolveReferences();
         PrepareInitialState();
     }
 
@@ -93,7 +72,6 @@ public class GameStartSequenceCoordinator : MonoBehaviour
 
     private IEnumerator StartSequenceRoutine()
     {
-        ResolveReferences();
         PrepareInitialState();
 
         yield return HideMenuIconsRoutine();
@@ -301,32 +279,6 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         }
     }
 
-    private void ResolveReferences()
-    {
-        if (gameStarts == null || gameStarts.Length == 0)
-            gameStarts = FindObjectsByType<GameStartMinigame>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-
-        if (menuIcons == null || menuIcons.Length == 0)
-        {
-            GameObject icon = FindSceneObject(menuIconName);
-            if (icon != null)
-                menuIcons = new[] { icon };
-        }
-
-        if ((heartsRoots == null || heartsRoots.Length == 0) && heartsRootNames != null)
-        {
-            List<GameObject> roots = new List<GameObject>(heartsRootNames.Length);
-            foreach (string rootName in heartsRootNames)
-            {
-                GameObject root = FindSceneObject(rootName);
-                if (root != null)
-                    roots.Add(root);
-            }
-
-            heartsRoots = roots.ToArray();
-        }
-    }
-
     private IEnumerable<GameStartMinigame> GetKnownGameStarts()
     {
         HashSet<GameStartMinigame> known = new HashSet<GameStartMinigame>();
@@ -411,18 +363,4 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         }
     }
 
-    private static GameObject FindSceneObject(string objectName)
-    {
-        if (string.IsNullOrEmpty(objectName))
-            return null;
-
-        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-        foreach (GameObject obj in allObjects)
-        {
-            if (obj.name == objectName && obj.scene.IsValid())
-                return obj;
-        }
-
-        return null;
-    }
 }

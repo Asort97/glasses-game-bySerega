@@ -45,7 +45,6 @@ public class GameStartMinigame : MinigameBase
     private void Awake()
     {
         CacheStartPosition();
-        ResolveRightLensRefs();
         EnsureLensCollider();
     }
 
@@ -54,7 +53,6 @@ public class GameStartMinigame : MinigameBase
         CacheStartPosition();
         if (controlMode == ControlMode.RightLensCursor)
         {
-            ResolveRightLensRefs();
             EnsureLensCollider();
         }
     }
@@ -66,7 +64,6 @@ public class GameStartMinigame : MinigameBase
         _waitingForSharedSequence = false;
         _completed = false;
 
-        ResolveCoordinator();
         if (useSharedStartSequence && startSequenceCoordinator != null)
             startSequenceCoordinator.Register(this);
 
@@ -144,7 +141,6 @@ public class GameStartMinigame : MinigameBase
         if (_completed)
             return;
 
-        ResolveCoordinator();
         if (_waitingForSharedSequence && startSequenceCoordinator != null)
         {
             startSequenceCoordinator.NotifyActivated(this);
@@ -188,26 +184,6 @@ public class GameStartMinigame : MinigameBase
         Vector3 worldPosition = GetWorldPositionFromUv(uv);
         Vector3 localPosition = transform.InverseTransformPoint(worldPosition);
         circle.localPosition = new Vector3(localPosition.x, localPosition.y, circle.localPosition.z);
-    }
-
-    private void ResolveRightLensRefs()
-    {
-        if (mainCamera == null)
-            mainCamera = Camera.main != null ? Camera.main : GameObject.Find("Main Camera")?.GetComponent<Camera>();
-
-        if (rightGameCamera == null)
-            rightGameCamera = GameObject.Find("RightGameCamera")?.GetComponent<Camera>();
-
-        if (lensTransform == null)
-            lensTransform = GameObject.Find("Lens2")?.transform;
-    }
-
-    private void ResolveCoordinator()
-    {
-        if (!useSharedStartSequence || startSequenceCoordinator != null)
-            return;
-
-        startSequenceCoordinator = GameStartSequenceCoordinator.FindOrCreate();
     }
 
     private void EnsureLensCollider()

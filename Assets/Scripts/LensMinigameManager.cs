@@ -18,13 +18,13 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private GameObject     previewTitle;
     [SerializeField] private float          blankDelay = 0.5f;
     [SerializeField] private float          previewDuration = 2f;
+    [SerializeField] private LensHealthSystem health;
 
     private int[]            _order;
     private int              _orderIndex;
     private MinigameBase     _current;
     private int              _lastIdx = -1;
     private bool             _paused;
-    private LensHealthSystem _health;
     private SpriteRenderer   _previewSpriteRenderer;
     private Image            _previewImage;
     private Coroutine        _switchRoutine;
@@ -38,7 +38,6 @@ public class LensMinigameManager : MonoBehaviour
 
     public void Begin(bool restart = false)
     {
-        _health = GetComponent<LensHealthSystem>();
         ResolvePreviewTitle();
         HidePreviewTitle();
 
@@ -198,7 +197,6 @@ public class LensMinigameManager : MonoBehaviour
     {
         MinigameBase finished = _current;
         Detach(finished);
-        bool finishedWasStartMinigame = finished != null && finished == ResolveStartMinigame();
 
         if (finished != null)
         {
@@ -208,9 +206,9 @@ public class LensMinigameManager : MonoBehaviour
 
         if (_paused) return;
 
-        if (isLose && _health != null)
+        if (isLose && health != null)
         {
-            _health.OnLose();
+            health.OnLose();
             if (_paused) return;
         }
 
@@ -254,13 +252,6 @@ public class LensMinigameManager : MonoBehaviour
 
     private void ResolvePreviewTitle()
     {
-        if (previewTitle == null)
-        {
-            Transform preview = transform.Find("PreviewTitle");
-            if (preview != null)
-                previewTitle = preview.gameObject;
-        }
-
         if (previewTitle == null) return;
 
         _previewSpriteRenderer = previewTitle.GetComponent<SpriteRenderer>();
