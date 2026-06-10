@@ -1,14 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Менеджер пула мини-игр для одной линзы.
-/// Вешается на LeftGameContent или RightGameContent.
-/// Перемешивает игры (без двух одинаковых подряд), переключает через SetActive,
-/// и обновляет fill bar таймера.
-/// </summary>
 public class LensMinigameManager : MonoBehaviour
 {
     [SerializeField] private MinigameBase startMinigame;
@@ -19,6 +14,16 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private float          blankDelay = 0.5f;
     [SerializeField] private float          previewDuration = 2f;
     [SerializeField] private LensHealthSystem health;
+    [SerializeField] private LensAudioService audioService;
+
+    [Header("Result")]
+    [SerializeField] private Sprite winResultSprite;
+    [SerializeField] private Sprite loseResultSprite;
+    [SerializeField] private float resultDuration = 1f;
+    [SerializeField] private float resultBlinkInterval = 0.1f;
+    [SerializeField] private Transform lensCameraTransform;
+    [SerializeField] private float loseCameraShakeAmplitude = 0.15f;
+    [SerializeField] private float loseCameraShakeSpeed = 45f;
 
     private int[]            _order;
     private int              _orderIndex;
@@ -28,8 +33,12 @@ public class LensMinigameManager : MonoBehaviour
     private SpriteRenderer   _previewSpriteRenderer;
     private Image            _previewImage;
     private Coroutine        _switchRoutine;
+    private Coroutine        _finishRoutine;
     private bool             _started;
     private bool             _startMinigamePlayed;
+    private bool             _cameraShakeActive;
+    private Vector3          _cameraStartLocalPosition;
+    private Tween            _cameraShakeTween;
 
     private void Start()
     {
@@ -197,29 +206,145 @@ public class LensMinigameManager : MonoBehaviour
     {
         MinigameBase finished = _current;
         Detach(finished);
+        bool showResult = !IsStartMinigame(finished);
 
         if (finished != null)
         {
             finished.StopGame();
-            finished.gameObject.SetActive(false);
+            if (!showResult)
+                finished.gameObject.SetActive(false);
         }
 
         if (_paused) return;
 
+        if (_finishRoutine != null)
+            StopCoroutine(_finishRoutine);
+
+        _finishRoutine = StartCoroutine(FinishGameRoutine(isLose, showResult));
+    }
+
+    private IEnumerator FinishGameRoutine(bool isLose, bool showResult)
+    {
+        if (showResult)
+        {
+            PlayResultSound(isLose);
+            ShowResultTitle(isLose ? loseResultSprite : winResultSprite);
+            if (isLose)
+                yield return ShakeLoseResult();
+            else
+                yield return BlinkResultTitle();
+            HidePreviewTitle();
+        }
+
         if (isLose && health != null)
         {
             health.OnLose();
-            if (_paused) return;
+            if (_paused)
+            {
+                _finishRoutine = null;
+                yield break;
+            }
         }
 
+        _finishRoutine = null;
         QueueNext();
+    }
+
+    private IEnumerator BlinkResultTitle()
+    {
+        float elapsed = 0f;
+        float blinkElapsed = 0f;
+        float interval = Mathf.Max(0.01f, resultBlinkInterval);
+        bool visible = true;
+
+        while (elapsed < resultDuration)
+        {
+            elapsed += Time.deltaTime;
+            blinkElapsed += Time.deltaTime;
+
+            if (blinkElapsed >= interval)
+            {
+                blinkElapsed = 0f;
+                visible = !visible;
+                if (previewTitle != null)
+                    previewTitle.SetActive(visible);
+            }
+
+            yield return null;
+        }
+
+        if (previewTitle != null)
+            previewTitle.SetActive(true);
+    }
+
+    private IEnumerator ShakeLoseResult()
+    {
+        if (lensCameraTransform == null)
+        {
+            yield return new WaitForSeconds(resultDuration);
+            yield break;
+        }
+
+        _cameraShakeActive = true;
+        _cameraStartLocalPosition = lensCameraTransform.localPosition;
+
+        int vibrato = Mathf.Max(1, Mathf.RoundToInt(resultDuration * loseCameraShakeSpeed));
+        _cameraShakeTween = DOTween.Shake(
+            () => lensCameraTransform.localPosition,
+            value => lensCameraTransform.localPosition = value,
+            resultDuration,
+            loseCameraShakeAmplitude,
+            vibrato,
+            90f,
+            true,
+            false);
+
+        yield return _cameraShakeTween.WaitForCompletion();
+
+        ResetLoseCamera();
+    }
+
+    private void ResetLoseCamera()
+    {
+        if (!_cameraShakeActive)
+            return;
+
+        if (_cameraShakeTween != null && _cameraShakeTween.IsActive())
+            _cameraShakeTween.Kill(false);
+
+        if (lensCameraTransform != null)
+            lensCameraTransform.localPosition = _cameraStartLocalPosition;
+
+        _cameraShakeActive = false;
+        _cameraShakeTween = null;
+    }
+
+    private void PlayResultSound(bool isLose)
+    {
+        if (audioService == null)
+            return;
+
+        if (isLose)
+            audioService.PlayLose();
+        else
+            audioService.PlayWin();
     }
 
     private void StopSwitchRoutine()
     {
-        if (_switchRoutine == null) return;
-        StopCoroutine(_switchRoutine);
-        _switchRoutine = null;
+        if (_switchRoutine != null)
+        {
+            StopCoroutine(_switchRoutine);
+            _switchRoutine = null;
+        }
+
+        if (_finishRoutine != null)
+        {
+            StopCoroutine(_finishRoutine);
+            _finishRoutine = null;
+        }
+
+        ResetLoseCamera();
     }
 
     private void HideAllMinigames()
@@ -271,6 +396,22 @@ public class LensMinigameManager : MonoBehaviour
             _previewImage.sprite = sprite;
 
         SetTimerVisible(sprite != null);
+        previewTitle.SetActive(sprite != null);
+    }
+
+    private void ShowResultTitle(Sprite sprite)
+    {
+        if (previewTitle == null)
+            ResolvePreviewTitle();
+        if (previewTitle == null)
+            return;
+
+        if (_previewSpriteRenderer != null)
+            _previewSpriteRenderer.sprite = sprite;
+        if (_previewImage != null)
+            _previewImage.sprite = sprite;
+
+        SetTimerVisible(false);
         previewTitle.SetActive(sprite != null);
     }
 

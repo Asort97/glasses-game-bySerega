@@ -816,7 +816,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 103783120}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59225d664a0122040b42d8efdccafbc4, type: 3}
   m_Name: 
@@ -834,6 +834,14 @@ MonoBehaviour:
   blankDelay: 0.5
   previewDuration: 2
   health: {fileID: 103783123}
+  audioService: {fileID: 820713227}
+  winResultSprite: {fileID: -1021781407, guid: 5a2fb6079d15d8545884e8c673d4626c, type: 3}
+  loseResultSprite: {fileID: 1965044252, guid: 5a2fb6079d15d8545884e8c673d4626c, type: 3}
+  resultDuration: 1
+  resultBlinkInterval: 0.1
+  lensCameraTransform: {fileID: 1909734861}
+  loseCameraShakeAmplitude: 0.15
+  loseCameraShakeSpeed: 45
 --- !u!114 &103783123
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1332,7 +1340,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingOrder: 5
   m_Sprite: {fileID: -938075083, guid: ab638eb2c06e792469313b624767cb4c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -2118,9 +2126,9 @@ GameObject:
   m_Component:
   - component: {fileID: 330585546}
   - component: {fileID: 330585545}
-  - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
+  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2128,14 +2136,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &330585544
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
 --- !u!20 &330585545
 Camera:
   m_ObjectHideFlags: 0
@@ -2267,6 +2267,20 @@ MonoBehaviour:
   useColorKeyTransparency: 0
   enableHDRWithColorKey: 1
   enablePostProcessingWithColorKey: 1
+--- !u!114 &330585549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c6556701af9e04380698b89f691b6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nonRigidbodyVelocity: 0
+  attenuationObject: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -3767,6 +3781,7 @@ GameObject:
   - component: {fileID: 820713224}
   - component: {fileID: 820713225}
   - component: {fileID: 820713226}
+  - component: {fileID: 820713227}
   m_Layer: 0
   m_Name: LensGameSetup
   m_TagString: Untagged
@@ -3868,6 +3883,32 @@ MonoBehaviour:
   healthSystems:
   - {fileID: 103783123}
   - {fileID: 2127787417}
+--- !u!114 &820713227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 820713222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f3e9026d1a2f1241b9c7295ceb54e98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  winEvent:
+    Guid:
+      Data1: 203562814
+      Data2: 1165783900
+      Data3: -859973994
+      Data4: -452005216
+    Path: event:/Game/Win
+  loseEvent:
+    Guid:
+      Data1: 1235834538
+      Data2: 1112190605
+      Data3: 1014201229
+      Data4: -1067436056
+    Path: event:/Game/Lose
 --- !u!1 &830644410
 GameObject:
   m_ObjectHideFlags: 0
@@ -4308,7 +4349,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingOrder: 5
   m_Sprite: {fileID: -938075083, guid: ab638eb2c06e792469313b624767cb4c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -10297,6 +10338,14 @@ MonoBehaviour:
   blankDelay: 0.5
   previewDuration: 2
   health: {fileID: 2127787417}
+  audioService: {fileID: 820713227}
+  winResultSprite: {fileID: -1021781407, guid: 5a2fb6079d15d8545884e8c673d4626c, type: 3}
+  loseResultSprite: {fileID: 1965044252, guid: 5a2fb6079d15d8545884e8c673d4626c, type: 3}
+  resultDuration: 1
+  resultBlinkInterval: 0.1
+  lensCameraTransform: {fileID: 1397687865}
+  loseCameraShakeAmplitude: 0.15
+  loseCameraShakeSpeed: 45
 --- !u!114 &2127787417
 MonoBehaviour:
   m_ObjectHideFlags: 0
