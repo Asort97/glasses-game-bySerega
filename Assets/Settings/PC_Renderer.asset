@@ -127,6 +127,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Active: 1
   settings:
+    shader: {fileID: 4800000, guid: a45db0d6a9901eb48a679fcf679c629c, type: 3}
     renderPassEvent: 600
     leftColor: {r: 0, g: 1, b: 0.5372549, a: 1}
     rightColor: {r: 1, g: 0.15662651, b: 0, a: 1}

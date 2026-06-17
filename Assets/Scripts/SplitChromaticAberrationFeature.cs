@@ -11,6 +11,7 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
     [System.Serializable]
     public class Settings
     {
+        public Shader shader;
         public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
         [ColorUsage(false, false)]
         public Color leftColor  = new Color(1f, 0f, 0f);
@@ -34,12 +35,13 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
 
     public override void Create()
     {
-        var shader = Shader.Find("Custom/SplitChromaticAberration");
+        var shader = settings.shader != null ? settings.shader : Shader.Find("Custom/SplitChromaticAberration");
         if (shader == null)
         {
             Debug.LogError("[SplitChromaticAberration] Shader not found!");
             return;
         }
+        Debug.Log($"[SplitChromaticAberration] Create with shader '{shader.name}'.");
         _material = CoreUtils.CreateEngineMaterial(shader);
         _pass = new SplitChromaticAberrationPass(_material);
         _pass.renderPassEvent = settings.renderPassEvent;
