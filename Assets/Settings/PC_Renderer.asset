@@ -26,7 +26,6 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 7200000, guid: b9a23f869c4fd45f19c5ada54dd82176, type: 3}
   m_RendererFeatures:
   - {fileID: 7833122117494664109}
-  - {fileID: 424242424242424242}
   - {fileID: 8911001305281039425}
   - {fileID: 6611729570168491222}
   m_RendererFeatureMap: 9471feffffffffffd6ccd67c0395c15b
@@ -55,22 +54,6 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
---- !u!114 &424242424242424242
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 615f57b4e8685034abf1b96202b2bccf, type: 3}
-  m_Name: TransparentChromaKeyRendererFeature
-  m_EditorClassIdentifier: 
-  m_Active: 0
-  settings:
-    keyColor: {r: 1, g: 0, b: 1, a: 1}
-    glowThreshold: 0.01
 --- !u!114 &6611729570168491222
 MonoBehaviour:
   m_ObjectHideFlags: 0
