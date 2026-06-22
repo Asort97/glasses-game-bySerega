@@ -131,7 +131,7 @@ public class GameStartMinigame : MinigameBase
             {
                 _control = false;
                 _waitingForSharedSequence = useSharedStartSequence;
-                circle.DOLocalMove(Vector2.zero, 0.5f).OnComplete(HandleCircleActivated);
+                circle.DOLocalMove(Vector2.zero, 0.05f).OnComplete(HandleCircleActivated);
             }
         }
     }

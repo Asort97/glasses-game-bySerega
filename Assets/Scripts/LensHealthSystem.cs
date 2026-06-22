@@ -72,7 +72,8 @@ public class LensHealthSystem : MonoBehaviour
 
         // Затемнить линзу
         SetLensColor(Color.black);
-
+        LensAudioService.Instance.PlayTVon(false, loseFromLeft ? -1f : 1f);
+        
         // Остановить мини-игры
         if (manager != null) manager.SetPaused(true);
 
@@ -106,6 +107,8 @@ public class LensHealthSystem : MonoBehaviour
         // Тряска родителя сердец
         ShakeHearts();
 
+        LensAudioService.Instance.PlayHeartClick();
+
         _pressCount++;
 
         if (!_phase2 && _pressCount >= Phase1Target)
@@ -113,10 +116,18 @@ public class LensHealthSystem : MonoBehaviour
             _phase2 = true;
             _pressCount = 0;
             // Сердца -> Health_1
+
+            // LensAudioService.Instance.PlayHeartHalf();
+
             SetAllHeartsState(1);
         }
         else if (_phase2 && _pressCount >= Phase2Target)
         {
+
+            LensAudioService.Instance.PlayHeartHalf();
+
+            // LensAudioService.Instance.PlayHeartFinish();
+
             RestoreLens();
         }
     }
@@ -130,6 +141,7 @@ public class LensHealthSystem : MonoBehaviour
 
         // Вернуть белый цвет линзе
         SetLensColor(Color.white);
+        LensAudioService.Instance.PlayTVon(true, loseFromLeft ? -1f : 1f);
 
         // Оставшиеся сердца -> Health_0
         RefreshHeartsUI();

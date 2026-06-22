@@ -18,6 +18,7 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
     [SerializeField] private GameObject[] heartsRoots;
     [SerializeField] private Renderer[] lensRenderers;
     [SerializeField] private LensMinigameManager[] minigameManagers;
+    [SerializeField] private DesktopScreenshotBackground desktopScreenshotBackground;
 
     [Header("Lens Color")]
     [SerializeField] private Color hiddenLensColor = Color.black;
@@ -91,6 +92,7 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         HideMinigames();
         SetActive(heartsRoots, false);
         SetLensColor(hiddenLensColor);
+        // LensAudioService.Instance.PlayTVon(false);
 
         if (glassesAnimator != null)
             glassesAnimator.enabled = false;
@@ -99,7 +101,16 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
     private IEnumerator BootstrapRoutine()
     {
         yield return PlayIntroAnimation();
-        yield return FadeLenses(hiddenLensColor, visibleLensColor, lensFadeDuration);
+
+        SetLensColor(visibleLensColor);
+        LensAudioService.Instance.SwitchToMenuTheme();
+        LensAudioService.Instance.PlayTVon(true, -1f);
+        LensAudioService.Instance.PlayTVon(true, 1f);
+
+        // yield return FadeLenses(hiddenLensColor, visibleLensColor, lensFadeDuration);
+        
+        if (desktopScreenshotBackground != null)
+            desktopScreenshotBackground.PlayLensEnabledEffect();
 
         SetActive(gameplayRoots, true);
         SetActive(heartsRoots, true);
@@ -128,25 +139,6 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         wait += animationEndPadding;
         if (wait > 0f)
             yield return new WaitForSecondsRealtime(wait);
-    }
-
-    private IEnumerator FadeLenses(Color from, Color to, float duration)
-    {
-        if (duration <= 0f)
-        {
-            SetLensColor(to);
-            yield break;
-        }
-
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            SetLensColor(Color.Lerp(from, to, Mathf.Clamp01(elapsed / duration)));
-            yield return null;
-        }
-
-        SetLensColor(to);
     }
 
     private void SetLensColor(Color color)

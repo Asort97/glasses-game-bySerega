@@ -2281,6 +2281,8 @@ MonoBehaviour:
   targetDarkness: 0.95
   darkenDuration: 5
   saturation: 0.5
+  targetLightMultiplyStrength: 1
+  lightAppearDelay: 0.33
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -3826,6 +3828,7 @@ MonoBehaviour:
   heartsRoots: []
   lensRenderers: []
   minigameManagers: []
+  desktopScreenshotBackground: {fileID: 330585550}
   hiddenLensColor: {r: 0, g: 0, b: 0, a: 1}
   visibleLensColor: {r: 1, g: 1, b: 1, a: 1}
   lensFadeDuration: 0.35
@@ -3909,6 +3912,62 @@ MonoBehaviour:
       Data3: 1014201229
       Data4: -1067436056
     Path: event:/Game/Lose
+  heartClicking:
+    Guid:
+      Data1: -1286379565
+      Data2: 1102851276
+      Data3: -366314620
+      Data4: 206820570
+    Path: event:/Game/HeartClicking
+  heartClickingHalf:
+    Guid:
+      Data1: 872580550
+      Data2: 1310337868
+      Data3: -56959600
+      Data4: 870724823
+    Path: event:/Game/HeartHalfClick
+  heartClickingFinish:
+    Guid:
+      Data1: -1140636479
+      Data2: 1106959490
+      Data3: -142549574
+      Data4: -1495899964
+    Path: event:/Game/HeartFinishClick
+  tvON:
+    Guid:
+      Data1: 892942664
+      Data2: 1296722741
+      Data3: -530725193
+      Data4: -951908818
+    Path: event:/Game/TVOn
+  tvOFF:
+    Guid:
+      Data1: -1406418451
+      Data2: 1175616985
+      Data3: 912660097
+      Data4: -634732145
+    Path: event:/Game/TVOff
+  gameStart:
+    Guid:
+      Data1: 1959820023
+      Data2: 1094728592
+      Data3: 1895861418
+      Data4: 452397670
+    Path: event:/Game/GameStart
+  menuTheme:
+    Guid:
+      Data1: -447257290
+      Data2: 1100034993
+      Data3: 1913469113
+      Data4: -574160685
+    Path: event:/Game/MenuTheme
+  click:
+    Guid:
+      Data1: 675680281
+      Data2: 1086412473
+      Data3: -1507354702
+      Data4: -87918531
+    Path: event:/Game/Click
 --- !u!1 &830644410
 GameObject:
   m_ObjectHideFlags: 0
@@ -6067,7 +6126,7 @@ MonoBehaviour:
   useSharedStartSequence: 1
   startSequenceCoordinator: {fileID: 820713225}
   moveSpeed: 5
-  nearThreshold: 0.1
+  nearThreshold: 0.3
   randomizeCircleStart: 1
   randomStartMinDistance: 3
   randomStartMaxDistance: 3.5
@@ -6571,7 +6630,7 @@ GameObject:
   - component: {fileID: 1340730452}
   - component: {fileID: 1340730451}
   - component: {fileID: 1340730450}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: DesktopScreenshot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9680,7 +9739,7 @@ MonoBehaviour:
   useSharedStartSequence: 1
   startSequenceCoordinator: {fileID: 820713225}
   moveSpeed: 5
-  nearThreshold: 0.1
+  nearThreshold: 0.3
   randomizeCircleStart: 1
   randomStartMinDistance: 3
   randomStartMaxDistance: 3.5

@@ -130,6 +130,7 @@ public class LensMinigameManager : MonoBehaviour
             yield return new WaitForSeconds(blankDelay);
             if (_paused) yield break;
 
+            LensAudioService.Instance.Click();
             ShowPreviewTitle(next.PreviewTitleSprite);
             yield return new WaitForSeconds(previewDuration);
 

@@ -17,10 +17,13 @@ public class DesktopScreenshotBackground : MonoBehaviour
     [SerializeField] private float targetDarkness = 0.7f;
     [SerializeField] private float darkenDuration = 5f;
     [SerializeField] private float saturation = 0.5f;
+    [SerializeField] private float targetLightMultiplyStrength = 1f;
+    [SerializeField] private float lightAppearDelay = 0.33f;
 
     private Texture2D _desktopTexture;
     private Material _runtimeMaterial;
     private Coroutine _darkenRoutine;
+    private Coroutine _lightRoutine;
 
     private const int SM_CXSCREEN = 0;
     private const int SM_CYSCREEN = 1;
@@ -209,14 +212,14 @@ public class DesktopScreenshotBackground : MonoBehaviour
             return;
         }
 
-        Shader shader = Shader.Find("Custom/Desktop Screenshot Background");
-        if (shader == null)
+        Material sourceMaterial = backgroundRenderer.sharedMaterial;
+        if (sourceMaterial == null)
         {
-            Debug.LogError($"{LogPrefix} Cannot apply texture: shader 'Custom/Desktop Screenshot Background' not found.");
+            Debug.LogError($"{LogPrefix} Cannot apply texture: DesktopScreenshot renderer has no source material.");
             return;
         }
 
-        _runtimeMaterial = new Material(shader);
+        _runtimeMaterial = new Material(sourceMaterial);
         _runtimeMaterial.mainTexture = _desktopTexture;
         if (_runtimeMaterial.HasProperty("_BaseMap"))
         {
@@ -233,11 +236,18 @@ public class DesktopScreenshotBackground : MonoBehaviour
 
         SetSaturation(saturation);
         SetDarkness(0f);
+        SetLightMultiplyStrength(0f);
 
         backgroundRenderer.material = _runtimeMaterial;
         Debug.Log($"{LogPrefix} Applied texture to renderer '{backgroundRenderer.name}' material '{_runtimeMaterial.shader.name}'.");
 
         FitBackgroundToCamera();
+    }
+
+    public void PlayLensEnabledEffect()
+    {
+        Debug.Log($"{LogPrefix} PlayLensEnabledEffect.");
+        StartLightMultiply();
     }
 
     private static IntPtr ResolveGameWindow()
@@ -440,6 +450,17 @@ public class DesktopScreenshotBackground : MonoBehaviour
         _darkenRoutine = StartCoroutine(DarkenRoutine());
     }
 
+    private void StartLightMultiply()
+    {
+        if (_runtimeMaterial == null)
+            return;
+
+        if (_lightRoutine != null)
+            StopCoroutine(_lightRoutine);
+
+        _lightRoutine = StartCoroutine(DelayedLightMultiplyRoutine());
+    }
+
     private IEnumerator DarkenRoutine()
     {
         float duration = Mathf.Max(0.01f, darkenDuration);
@@ -458,6 +479,16 @@ public class DesktopScreenshotBackground : MonoBehaviour
         Debug.Log($"{LogPrefix} Darken complete. darkness={targetDarkness}");
     }
 
+    private IEnumerator DelayedLightMultiplyRoutine()
+    {
+        if (lightAppearDelay > 0f)
+            yield return new WaitForSecondsRealtime(lightAppearDelay);
+
+        SetLightMultiplyStrength(targetLightMultiplyStrength);
+        _lightRoutine = null;
+        Debug.Log($"{LogPrefix} Light multiply complete. strength={targetLightMultiplyStrength}");
+    }
+
     private void SetDarkness(float value)
     {
         if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_Darkness"))
@@ -472,5 +503,13 @@ public class DesktopScreenshotBackground : MonoBehaviour
             return;
 
         _runtimeMaterial.SetFloat("_Saturation", Mathf.Clamp01(value));
+    }
+
+    private void SetLightMultiplyStrength(float value)
+    {
+        if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_LightMultiplyStrength"))
+            return;
+
+        _runtimeMaterial.SetFloat("_LightMultiplyStrength", Mathf.Clamp01(value));
     }
 }

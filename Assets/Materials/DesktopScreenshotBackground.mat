@@ -27,9 +27,20 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _GreenLight:
+        m_Texture: {fileID: 2800000, guid: 0646773326d239640baa73f18bc44a0d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RedLight:
+        m_Texture: {fileID: 2800000, guid: c5181f3aba40d574588ec697ecfbd821, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _Darkness: 0
+    - _LightEdgeSoftness: 0.45
+    - _LightMultiplyStrength: 0
+    - _LightNoiseStrength: 0.08
     - _Saturation: 0.5
     m_Colors: []
   m_BuildTextureStacks: []

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{d58edf73-46aa-43c3-a0b1-8b5c48d8f2ae}">
+		<property name="assetPath">
+			<value>Heart3.mp3</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0.31346938775510202</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{eb8e66af-af0f-4da5-bd89-eb71869f5d3c}</destination>
+		</relationship>
+	</object>
+</objects>
