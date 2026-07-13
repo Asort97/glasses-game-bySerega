@@ -20,6 +20,11 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
     [SerializeField] private LensMinigameManager[] minigameManagers;
     [SerializeField] private DesktopScreenshotBackground desktopScreenshotBackground;
 
+    [Header("Test Mode")]
+    [SerializeField] private bool testMode;
+    [SerializeField] private GameObject testGame;
+    [SerializeField] private GameObject[] testGamePartners;
+
     [Header("Lens Color")]
     [SerializeField] private Color hiddenLensColor = Color.black;
     [SerializeField] private Color visibleLensColor = Color.white;
@@ -36,12 +41,19 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
     private void Awake()
     {
         ResolveMissingReferences();
-        PrepareHiddenState();
+
+        if (testMode)
+            PrepareTestState();
+        else
+            PrepareHiddenState();
     }
 
     private void Start()
     {
-        StartCoroutine(BootstrapRoutine());
+        if (testMode)
+            StartCoroutine(TestModeRoutine());
+        else
+            StartCoroutine(BootstrapRoutine());
     }
 
     private void ResolveMissingReferences()
@@ -96,6 +108,58 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
         if (glassesAnimator != null)
             glassesAnimator.enabled = false;
+    }
+
+    private void PrepareTestState()
+    {
+        SetManagersEnabled(false);
+        SetActive(gameplayRoots, true);
+        HideMinigames();
+        SetActive(heartsRoots, false);
+        SetLensColor(hiddenLensColor);
+
+        if (testGame != null)
+            testGame.SetActive(false);
+
+        if (glassesAnimator != null)
+            glassesAnimator.enabled = false;
+    }
+
+    private IEnumerator TestModeRoutine()
+    {
+        yield return PlayIntroAnimation();
+
+        SetLensColor(visibleLensColor);
+        LensAudioService.Instance.SwitchToMenuTheme();
+        LensAudioService.Instance.PlayTVon(true, -1f);
+        LensAudioService.Instance.PlayTVon(true, 1f);
+
+        if (desktopScreenshotBackground != null)
+            desktopScreenshotBackground.PlayLensEnabledEffect();
+
+        if (testGame == null)
+        {
+            Debug.LogError($"[{nameof(GlassesIntroBootstrap)}] Test Game is not assigned.", this);
+            yield break;
+        }
+
+        testGame.SetActive(true);
+        SetActive(testGamePartners, true);
+
+        MinigameBase minigame = testGame.GetComponent<MinigameBase>();
+        if (minigame != null)
+        {
+            LensMinigameManager manager = minigame.GetComponentInParent<LensMinigameManager>(true);
+            if (manager == null)
+            {
+                Debug.LogError($"[{nameof(GlassesIntroBootstrap)}] Test minigame has no LensMinigameManager parent.", testGame);
+                yield break;
+            }
+
+            manager.StartTestMinigame(minigame);
+            yield break;
+        }
+
     }
 
     private IEnumerator BootstrapRoutine()

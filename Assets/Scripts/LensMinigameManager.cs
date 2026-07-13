@@ -36,13 +36,33 @@ public class LensMinigameManager : MonoBehaviour
     private Coroutine        _finishRoutine;
     private bool             _started;
     private bool             _startMinigamePlayed;
+    private bool             _testMode;
+    private MinigameBase     _testMinigame;
     private bool             _cameraShakeActive;
     private Vector3          _cameraStartLocalPosition;
     private Tween            _cameraShakeTween;
 
     private void Start()
     {
-        Begin();
+        if (!_testMode)
+            Begin();
+    }
+
+    public void StartTestMinigame(MinigameBase minigame)
+    {
+        if (minigame == null)
+            return;
+
+        _testMode = true;
+        _testMinigame = minigame;
+        _paused = false;
+        _started = true;
+        enabled = true;
+
+        StopSwitchRoutine();
+        HideConfiguredMinigames();
+        HidePreviewTitle();
+        StartMinigame(_testMinigame);
     }
 
     public void Begin(bool restart = false)
@@ -235,6 +255,17 @@ public class LensMinigameManager : MonoBehaviour
             else
                 yield return BlinkResultTitle();
             HidePreviewTitle();
+        }
+
+        if (_testMode)
+        {
+            if (_current != null)
+                _current.gameObject.SetActive(false);
+
+            yield return null;
+            StartMinigame(_testMinigame);
+            _finishRoutine = null;
+            yield break;
         }
 
         if (isLose && health != null)
