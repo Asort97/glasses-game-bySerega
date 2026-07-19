@@ -12,25 +12,27 @@ public class Doodler : MonoBehaviour
 
     [Header("Horizontal Movement")]
     [SerializeField] private float horizontalSpeed = 12f;
+    [Min(0.01f)]
+    [SerializeField] private float cursorFollowSmoothTime = 0.12f;
     [SerializeField] private float leftLimit = -3.5f;
     [SerializeField] private float rightLimit = 3.5f;
 
     [Header("Mouse Mapping")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Camera rightGameCamera;
-    [SerializeField] private Transform rightLens;
+    [SerializeField] private Renderer rightLensRenderer;
     [SerializeField] private DoodlerPlatformSystem platformSystem;
     
     private static readonly int IsDoodling = Animator.StringToHash("IsDoodling");
 
     private Rigidbody2D _rigidbody;
     private Animator _animator;
-    private MeshCollider _lensCollider;
     private Vector2 _startPosition;
     private bool _started;
     private bool _canJump;
     private bool _jumpRequested;
     private bool _dead;
+    private float _horizontalVelocity;
 
     private void OnValidate()
     {
@@ -44,7 +46,6 @@ public class Doodler : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
         _startPosition = _rigidbody.position;
-        EnsureLensCollider();
 
         _rigidbody.bodyType = RigidbodyType2D.Dynamic;
         _rigidbody.freezeRotation = true;
@@ -74,6 +75,7 @@ public class Doodler : MonoBehaviour
         _canJump = false;
         _jumpRequested = false;
         _dead = false;
+        _horizontalVelocity = 0f;
     }
 
     private void Update()
@@ -94,12 +96,17 @@ public class Doodler : MonoBehaviour
 
         if (TryGetMouseHorizontalPosition(out float targetX))
         {
-            float nextX = Mathf.MoveTowards(
+            float nextX = Mathf.SmoothDamp(
                 _rigidbody.position.x,
                 targetX,
-                horizontalSpeed * Time.deltaTime);
+                ref _horizontalVelocity,
+                cursorFollowSmoothTime,
+                horizontalSpeed);
 
-            _rigidbody.position = new Vector2(nextX, _rigidbody.position.y);
+            if(_canJump == false)
+            {
+                _rigidbody.position = new Vector2(nextX, _rigidbody.position.y);
+            }
         }
     }
 
@@ -190,38 +197,17 @@ public class Doodler : MonoBehaviour
     {
         targetX = transform.position.x;
 
-        if (mainCamera == null || rightGameCamera == null || rightLens == null)
+        if (mainCamera == null || rightGameCamera == null || rightLensRenderer == null)
             return false;
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (_lensCollider == null || !_lensCollider.Raycast(ray, out RaycastHit hit, 1000f))
-            return false;
-
-        float halfWidth = rightGameCamera.orthographicSize * rightGameCamera.aspect;
-        float worldX = Mathf.Lerp(
-            rightGameCamera.transform.position.x - halfWidth,
-            rightGameCamera.transform.position.x + halfWidth,
-            hit.textureCoord.x);
+        Bounds lensBounds = rightLensRenderer.bounds;
+        float leftScreenX = mainCamera.WorldToScreenPoint(lensBounds.min).x;
+        float rightScreenX = mainCamera.WorldToScreenPoint(lensBounds.max).x;
+        float lensScreenX = Mathf.InverseLerp(leftScreenX, rightScreenX, Input.mousePosition.x);
 
         float centerX = rightGameCamera.transform.position.x;
-        targetX = Mathf.Clamp(worldX, centerX + leftLimit, centerX + rightLimit);
+        targetX = Mathf.Lerp(centerX + leftLimit, centerX + rightLimit, lensScreenX);
         return true;
     }
 
-    private void EnsureLensCollider()
-    {
-        if (rightLens == null)
-            return;
-
-        MeshFilter meshFilter = rightLens.GetComponent<MeshFilter>();
-        if (meshFilter == null || meshFilter.sharedMesh == null)
-            return;
-
-        _lensCollider = rightLens.GetComponent<MeshCollider>();
-        if (_lensCollider == null)
-            _lensCollider = rightLens.gameObject.AddComponent<MeshCollider>();
-
-        _lensCollider.sharedMesh = meshFilter.sharedMesh;
-        _lensCollider.convex = false;
-    }
 }

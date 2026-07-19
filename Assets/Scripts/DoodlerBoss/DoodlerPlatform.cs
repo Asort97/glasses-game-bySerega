@@ -13,18 +13,51 @@ public class DoodlerPlatform : MonoBehaviour
     [SerializeField] private Sprite numberThree;
     [SerializeField] private Sprite numberFour;
 
+    [Header("Movement")]
+    [SerializeField] private float movingPlatformChance = 0.5f;
+    [SerializeField] private float movementDistance = 1.25f;
+    [SerializeField] private float movementSpeed = 1.5f;
+
     public int Index { get; private set; }
     public int RequiredNumber { get; private set; }
 
-    public void Initialize(int index, int selectedNumber, int previousNumber, int twoPlatformsAgoNumber)
+    private float _startLocalX;
+    private float _movementPhase;
+    private float _movementAmplitude;
+    private bool _movesHorizontally;
+
+    public void Initialize(
+        int index,
+        int selectedNumber,
+        int previousNumber,
+        int twoPlatformsAgoNumber,
+        Vector2 horizontalBounds)
     {
         Index = index;
         RequiredNumber = GetRandomNumber(previousNumber, twoPlatformsAgoNumber);
+        _startLocalX = Mathf.Clamp(transform.localPosition.x, horizontalBounds.x, horizontalBounds.y);
+        _movementAmplitude = Mathf.Min(
+            movementDistance,
+            _startLocalX - horizontalBounds.x,
+            horizontalBounds.y - _startLocalX);
+        _movementPhase = Random.value * Mathf.PI * 2f;
+        _movesHorizontally = Random.value < movingPlatformChance;
 
         if (numberRenderer != null)
             numberRenderer.sprite = GetNumberSprite(RequiredNumber);
 
         SetUsable(RequiredNumber == selectedNumber);
+    }
+
+    private void Update()
+    {
+        if (!_movesHorizontally)
+            return;
+
+        Vector3 position = transform.localPosition;
+        position.x = _startLocalX
+            + Mathf.Sin(Time.time * movementSpeed + _movementPhase) * _movementAmplitude;
+        transform.localPosition = position;
     }
 
     private int GetRandomNumber(int previousNumber, int twoPlatformsAgoNumber)

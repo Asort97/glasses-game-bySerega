@@ -7975,6 +7975,9 @@ MonoBehaviour:
   numberTwo: {fileID: 995758099, guid: 8acde6cc4a05be44192106d9ba98876d, type: 3}
   numberThree: {fileID: 1894799810, guid: 8acde6cc4a05be44192106d9ba98876d, type: 3}
   numberFour: {fileID: -1504003669, guid: 8acde6cc4a05be44192106d9ba98876d, type: 3}
+  movingPlatformChance: 0.5
+  movementDistance: 1.25
+  movementSpeed: 1.5
 --- !u!251 &1365840934
 PlatformEffector2D:
   m_ObjectHideFlags: 0
@@ -12507,11 +12510,12 @@ MonoBehaviour:
   jumpCycleDuration: 1.7666667
   jumpSpeed: 6.792453
   horizontalSpeed: 12
+  cursorFollowSmoothTime: 1
   leftLimit: -3.5
   rightLimit: 3.5
   mainCamera: {fileID: 330585545}
   rightGameCamera: {fileID: 1397687866}
-  rightLens: {fileID: 6299790061536830953}
+  rightLensRenderer: {fileID: 2035801127}
   platformSystem: {fileID: 1768883539}
 --- !u!61 &1975835739
 BoxCollider2D:

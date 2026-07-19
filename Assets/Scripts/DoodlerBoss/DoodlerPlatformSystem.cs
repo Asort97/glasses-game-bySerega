@@ -230,7 +230,12 @@ public class DoodlerPlatformSystem : MonoBehaviour
             return;
         }
 
-        marker.Initialize(index, _selectedNumber, _lastPlatformNumber, _twoPlatformsAgoNumber);
+        marker.Initialize(
+            index,
+            _selectedNumber,
+            _lastPlatformNumber,
+            _twoPlatformsAgoNumber,
+            horizontalRange);
         _twoPlatformsAgoNumber = _lastPlatformNumber;
         _lastPlatformNumber = marker.RequiredNumber;
 
