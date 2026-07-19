@@ -21,6 +21,7 @@ public class FruitNinjaMinigame : MinigameBase
     [SerializeField] private float minSliceScreenSpeed = 320f;
     [SerializeField, Range(0f, 1f)] private float minSliceChordFraction = 0.35f;
     [SerializeField] private float sliceHitPadding = 0.12f;
+    [SerializeField, Range(0f, 0.5f)] private float maxVisualCutOffsetFraction = 0.2f;
     [SerializeField] private float trailVisibleTime = 0.18f;
     [SerializeField] private float sliceSeparationVelocity = 0.45f;
     [SerializeField, Range(0f, 1f)] private float bombSpawnChance = 0.2f;
@@ -470,13 +471,30 @@ public class FruitNinjaMinigame : MinigameBase
             localNormal = Vector2.up;
 
         Vector3 localHit3 = fruit.transform.InverseTransformPoint(new Vector3(hitPoint.x, hitPoint.y, fruitZ));
-        float cutOffset = Mathf.Clamp(Vector2.Dot(new Vector2(localHit3.x, localHit3.y), localNormal), -0.32f, 0.32f);
+        float rawCutOffset = Vector2.Dot(new Vector2(localHit3.x, localHit3.y), localNormal);
+        float maxVisualCutOffset = GetMaxVisualCutOffset(fruit, localNormal);
+        float cutOffset = Mathf.Clamp(
+            rawCutOffset,
+            -maxVisualCutOffset,
+            maxVisualCutOffset);
 
         CreateSlicePiece(fruit, localNormal, cutOffset, 1f, worldNormal);
         CreateSlicePiece(fruit, localNormal, cutOffset, -1f, -worldNormal);
 
         if (fruit.gameObject != null)
             Destroy(fruit.gameObject);
+    }
+
+    private float GetMaxVisualCutOffset(FruitBody fruit, Vector2 localNormal)
+    {
+        Sprite sprite = fruit.renderer != null ? fruit.renderer.sprite : _circleSprite;
+        if (sprite == null)
+            return 0.1f;
+
+        Vector2 extents = sprite.bounds.extents;
+        float radiusAlongNormal = Mathf.Abs(localNormal.x) * extents.x
+            + Mathf.Abs(localNormal.y) * extents.y;
+        return radiusAlongNormal * maxVisualCutOffsetFraction;
     }
 
     private void CreateSlicePiece(FruitBody fruit, Vector2 localNormal, float cutOffset, float side, Vector2 push)
