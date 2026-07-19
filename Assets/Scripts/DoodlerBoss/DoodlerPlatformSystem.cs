@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class DoodlerPlatformSystem : MonoBehaviour
 {
+    public event System.Action<DoodlerPlatform> OnNewPlatformLanded;
+
     [Header("References")]
     [SerializeField] private GameObject platformTemplate;
     [SerializeField] private Transform platformParent;
@@ -79,6 +81,7 @@ public class DoodlerPlatformSystem : MonoBehaviour
             return;
 
         _highestLandedIndex = platform.Index;
+        OnNewPlatformLanded?.Invoke(platform);
         _cameraTargetY = platform.transform.position.y
             + gameCamera.orthographicSize
             - landedPlatformBottomPadding;

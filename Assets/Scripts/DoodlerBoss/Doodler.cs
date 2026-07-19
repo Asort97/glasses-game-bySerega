@@ -65,6 +65,11 @@ public class Doodler : MonoBehaviour
             _rigidbody.simulated = false;
     }
 
+    public void ResetForBoss()
+    {
+        ResetDoodler();
+    }
+
     private void ResetDoodler()
     {
         _started = false;

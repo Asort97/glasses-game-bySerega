@@ -15,6 +15,10 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private float          previewDuration = 2f;
     [SerializeField] private LensHealthSystem health;
     [SerializeField] private LensAudioService audioService;
+    [SerializeField] private BossLevelDirector bossDirector;
+
+    [Header("Game Camera")]
+    [SerializeField] private Transform gameCameraTransform;
 
     [Header("Result")]
     [SerializeField] private Sprite winResultSprite;
@@ -39,8 +43,17 @@ public class LensMinigameManager : MonoBehaviour
     private bool             _testMode;
     private MinigameBase     _testMinigame;
     private bool             _cameraShakeActive;
+    private bool             _waitingForBoss;
     private Vector3          _cameraStartLocalPosition;
     private Tween            _cameraShakeTween;
+    private Vector3          _gameCameraStartLocalPosition;
+    private Quaternion       _gameCameraStartLocalRotation;
+    private bool             _hasGameCameraStart;
+
+    private void Awake()
+    {
+        CacheGameCameraStart();
+    }
 
     private void Start()
     {
@@ -62,6 +75,7 @@ public class LensMinigameManager : MonoBehaviour
         StopSwitchRoutine();
         HideConfiguredMinigames();
         HidePreviewTitle();
+        ResetGameCamera();
         StartMinigame(_testMinigame);
     }
 
@@ -69,6 +83,7 @@ public class LensMinigameManager : MonoBehaviour
     {
         ResolvePreviewTitle();
         HidePreviewTitle();
+        ResetGameCamera();
 
         if (timerFillParent != null)
             timerFillParent.SetActive(false);
@@ -84,6 +99,7 @@ public class LensMinigameManager : MonoBehaviour
         StopSwitchRoutine();
         _startMinigamePlayed = false;
         _lastIdx = -1;
+        _waitingForBoss = false;
 
         // Скрываем все мини-игры
         HideConfiguredMinigames();
@@ -120,8 +136,8 @@ public class LensMinigameManager : MonoBehaviour
         }
         else
         {
-            // Возобновить — запустить следующую
-            QueueNext();
+            if (!_waitingForBoss)
+                QueueNext();
         }
     }
 
@@ -212,6 +228,7 @@ public class LensMinigameManager : MonoBehaviour
 
     private void StartMinigame(MinigameBase next)
     {
+        ResetGameCamera();
         _current = next;
         _current.OnWin  += HandleWin;
         _current.OnLose += HandleLose;
@@ -228,6 +245,7 @@ public class LensMinigameManager : MonoBehaviour
         MinigameBase finished = _current;
         Detach(finished);
         bool showResult = !IsStartMinigame(finished);
+        bool isRegularWin = !isLose && showResult;
 
         if (finished != null)
         {
@@ -236,15 +254,17 @@ public class LensMinigameManager : MonoBehaviour
                 finished.gameObject.SetActive(false);
         }
 
+        ResetGameCamera();
+
         if (_paused) return;
 
         if (_finishRoutine != null)
             StopCoroutine(_finishRoutine);
 
-        _finishRoutine = StartCoroutine(FinishGameRoutine(isLose, showResult));
+        _finishRoutine = StartCoroutine(FinishGameRoutine(isLose, showResult, isRegularWin));
     }
 
-    private IEnumerator FinishGameRoutine(bool isLose, bool showResult)
+    private IEnumerator FinishGameRoutine(bool isLose, bool showResult, bool isRegularWin)
     {
         if (showResult)
         {
@@ -278,8 +298,40 @@ public class LensMinigameManager : MonoBehaviour
             }
         }
 
+        if (isRegularWin && bossDirector != null && bossDirector.NotifyRegularMinigamePassed(this))
+        {
+            bossDirector.WaitForBoss(this);
+            _finishRoutine = null;
+            yield break;
+        }
+
         _finishRoutine = null;
         QueueNext();
+    }
+
+    public void EnterBossWait()
+    {
+        _waitingForBoss = true;
+        HidePreviewTitle();
+        SetTimerVisible(false);
+        ResetGameCamera();
+
+        if (_current == null)
+            return;
+
+        Detach(_current);
+        _current.StopGame();
+        _current.gameObject.SetActive(false);
+        _current = null;
+    }
+
+    public void ResumeAfterBoss()
+    {
+        _waitingForBoss = false;
+        ResetGameCamera();
+
+        if (!_paused)
+            QueueNext();
     }
 
     private IEnumerator BlinkResultTitle()
@@ -349,6 +401,25 @@ public class LensMinigameManager : MonoBehaviour
 
         _cameraShakeActive = false;
         _cameraShakeTween = null;
+    }
+
+    private void CacheGameCameraStart()
+    {
+        if (gameCameraTransform == null)
+            return;
+
+        _gameCameraStartLocalPosition = gameCameraTransform.localPosition;
+        _gameCameraStartLocalRotation = gameCameraTransform.localRotation;
+        _hasGameCameraStart = true;
+    }
+
+    private void ResetGameCamera()
+    {
+        if (!_hasGameCameraStart || gameCameraTransform == null)
+            return;
+
+        gameCameraTransform.localPosition = _gameCameraStartLocalPosition;
+        gameCameraTransform.localRotation = _gameCameraStartLocalRotation;
     }
 
     private void PlayResultSound(bool isLose)
