@@ -84,6 +84,16 @@ public class LensMinigameManager : MonoBehaviour
         StartMinigame(_testMinigame);
     }
 
+    public void RestartFromGameStart()
+    {
+        _testMode = false;
+        _testMinigame = null;
+        _paused = false;
+        _waitingForBoss = false;
+        enabled = true;
+        Begin(true);
+    }
+
     public void Begin(bool restart = false)
     {
         ResolvePreviewTitle();

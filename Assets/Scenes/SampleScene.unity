@@ -4721,13 +4721,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameOverMenu: {fileID: 480856672}
-  restartButton: {fileID: 645014313}
   minigameManagers:
   - {fileID: 103783122}
   - {fileID: 2127787416}
   healthSystems:
   - {fileID: 103783123}
   - {fileID: 2127787417}
+  bossLevelDirector: {fileID: 820713229}
+  bossApproachCamera: {fileID: 820713230}
+  gameStartSequenceCoordinator: {fileID: 820713225}
+  restartDelay: 3
 --- !u!114 &820713227
 MonoBehaviour:
   m_ObjectHideFlags: 0

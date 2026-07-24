@@ -173,6 +173,22 @@ public class LensHealthSystem : MonoBehaviour
             manager.SetPaused(true);
     }
 
+    public void ResetHealth()
+    {
+        _hp = maxHP;
+        _broken = false;
+        _permanentlyBroken = false;
+        _gameOver = false;
+        _recoveryTimer = 0f;
+        _pressCount = 0;
+        _phase2 = false;
+
+        SetOtherLensNoise(0f);
+        SetLensColor(Color.white);
+        RefreshHeartsUI();
+        LensAudioService.Instance.PlayTVon(true, loseFromLeft ? -1f : 1f);
+    }
+
     public void ShowSingleHeartForBoss()
     {
         if (hearts == null || hearts.Length == 0)

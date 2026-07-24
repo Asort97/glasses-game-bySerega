@@ -36,6 +36,30 @@ public class BossLevelDirector : MonoBehaviour
     public int PassedMinigames => _passedMinigames;
     public int MinigamesPerBoss => minigamesPerBoss;
 
+    public void ResetForNewRun()
+    {
+        if (_startRoutine != null)
+            StopCoroutine(_startRoutine);
+        if (_resumeRoutine != null)
+            StopCoroutine(_resumeRoutine);
+
+        if (_activeBoss != null)
+        {
+            _activeBoss.OnCompleted -= HandleBossCompleted;
+            _activeBoss.OnFailed -= HandleBossFailed;
+            _activeBoss.StopBoss();
+        }
+
+        _startRoutine = null;
+        _resumeRoutine = null;
+        _activeBoss = null;
+        _passedMinigames = 0;
+        _bossQueued = false;
+        _leftWaiting = false;
+        _rightWaiting = false;
+        BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
+    }
+
     public bool NotifyRegularMinigamePassed(LensMinigameManager manager)
     {
         if (manager != leftManager && manager != rightManager)

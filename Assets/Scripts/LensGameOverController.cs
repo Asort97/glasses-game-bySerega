@@ -1,13 +1,15 @@
+using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class LensGameOverController : MonoBehaviour
 {
     [SerializeField] private GameObject gameOverMenu;
-    [SerializeField] private Button restartButton;
     [SerializeField] private LensMinigameManager[] minigameManagers;
     [SerializeField] private LensHealthSystem[] healthSystems;
+    [SerializeField] private BossLevelDirector bossLevelDirector;
+    [SerializeField] private BossApproachCamera bossApproachCamera;
+    [SerializeField] private GameStartSequenceCoordinator gameStartSequenceCoordinator;
+    [Min(0f)] [SerializeField] private float restartDelay = 3f;
 
     private LensHealthSystem _recoveringLens;
     private bool _gameOver;
@@ -19,8 +21,6 @@ public class LensGameOverController : MonoBehaviour
         if (gameOverMenu != null)
             gameOverMenu.SetActive(false);
 
-        if (restartButton != null)
-            restartButton.onClick.AddListener(RestartScene);
     }
 
     public void NotifyLensBroken(LensHealthSystem lens)
@@ -69,13 +69,23 @@ public class LensGameOverController : MonoBehaviour
             }
         }
 
-        if (gameOverMenu != null)
-            gameOverMenu.SetActive(true);
+        StartCoroutine(RestartAfterDelay());
     }
 
-    private void RestartScene()
+    private IEnumerator RestartAfterDelay()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        yield return new WaitForSecondsRealtime(restartDelay);
+
+        _gameOver = false;
+        _recoveringLens = null;
+        bossLevelDirector.ResetForNewRun();
+        bossApproachCamera.ResetImmediately();
+        gameStartSequenceCoordinator.ResetSequence();
+
+        foreach (LensHealthSystem health in healthSystems)
+            health.ResetHealth();
+
+        foreach (LensMinigameManager manager in minigameManagers)
+            manager.RestartFromGameStart();
     }
 }

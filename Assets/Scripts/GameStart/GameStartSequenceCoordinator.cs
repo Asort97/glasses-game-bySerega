@@ -45,6 +45,27 @@ public class GameStartSequenceCoordinator : MonoBehaviour
     private bool _completed;
     private float _musicRampProgress;
 
+    public void ResetSequence()
+    {
+        if (_sequenceRoutine != null)
+            StopCoroutine(_sequenceRoutine);
+
+        foreach (Coroutine heartRoutine in _heartRoutines)
+            if (heartRoutine != null)
+                StopCoroutine(heartRoutine);
+
+        _sequenceRoutine = null;
+        _heartRoutines.Clear();
+        _registered.Clear();
+        _activated.Clear();
+        _prepared = false;
+        _accelerated = false;
+        _completed = false;
+        _musicRampProgress = 0f;
+
+        PrepareInitialState();
+    }
+
     public void Register(GameStartMinigame gameStart)
     {
         if (gameStart != null)

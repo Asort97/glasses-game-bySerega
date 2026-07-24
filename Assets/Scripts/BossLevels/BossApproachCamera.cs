@@ -21,6 +21,13 @@ public class BossApproachCamera : MonoBehaviour
         bossDirector.BossProgressChanged -= UpdateCameraPosition;
     }
 
+    public void ResetImmediately()
+    {
+        Vector3 position = mainCameraTransform.localPosition;
+        position.z = startZ;
+        mainCameraTransform.localPosition = position;
+    }
+
     private void UpdateCameraPosition(int passedMinigames, int minigamesPerBoss)
     {
         float progress = Mathf.Clamp01((float)passedMinigames / minigamesPerBoss);
