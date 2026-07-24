@@ -7,6 +7,8 @@ using UnityEngine;
 /// </summary>
 public class GhostsMinigame : MinigameBase
 {
+    [SerializeField] private CanvasCursor canvasCursor;
+
     private ContactReporter _playerContact;
     private bool _ready; // защита от мгновенной коллизии при включении
 
@@ -27,6 +29,7 @@ public class GhostsMinigame : MinigameBase
     public override void StartGame()
     {
         base.StartGame();
+        canvasCursor.SetCursorSpriteVisible(false);
         _ready = false;
         if (_playerContact == null) return;
         _playerContact.OnTriggerEntered   += HandleTrigger;
@@ -37,6 +40,7 @@ public class GhostsMinigame : MinigameBase
 
     public override void StopGame()
     {
+        canvasCursor.SetCursorSpriteVisible(true);
         CancelInvoke(nameof(SetReady));
         _ready = false;
         base.StopGame();

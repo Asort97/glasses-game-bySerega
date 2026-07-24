@@ -11,8 +11,11 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private GameObject     timerFillParent;
     [SerializeField] private Image          timerFill;
     [SerializeField] private GameObject     previewTitle;
+    [SerializeField] private GameObject     bossWaitingPreviewChild;
     [SerializeField] private float          blankDelay = 0.5f;
     [SerializeField] private float          previewDuration = 2f;
+    [SerializeField] private float          previewEndBlankDelay = 0.2f;
+    [SerializeField] private float          gameStartEndPreviewClickDelay;
     [SerializeField] private LensHealthSystem health;
     [SerializeField] private LensAudioService audioService;
     [SerializeField] private BossLevelDirector bossDirector;
@@ -46,6 +49,8 @@ public class LensMinigameManager : MonoBehaviour
     private bool             _waitingForBoss;
     private Vector3          _cameraStartLocalPosition;
     private Tween            _cameraShakeTween;
+    private float            _nextPreviewClickDelay;
+    private Coroutine        _previewClickRoutine;
     private Vector3          _gameCameraStartLocalPosition;
     private Quaternion       _gameCameraStartLocalRotation;
     private bool             _hasGameCameraStart;
@@ -100,6 +105,7 @@ public class LensMinigameManager : MonoBehaviour
         _startMinigamePlayed = false;
         _lastIdx = -1;
         _waitingForBoss = false;
+        _nextPreviewClickDelay = 0f;
 
         // Скрываем все мини-игры
         HideConfiguredMinigames();
@@ -166,11 +172,16 @@ public class LensMinigameManager : MonoBehaviour
             yield return new WaitForSeconds(blankDelay);
             if (_paused) yield break;
 
-            LensAudioService.Instance.Click();
             ShowPreviewTitle(next.PreviewTitleSprite);
+            PlayPreviewClick(_nextPreviewClickDelay);
+            _nextPreviewClickDelay = 0f;
             yield return new WaitForSeconds(previewDuration);
 
             HidePreviewTitle();
+
+            if (previewEndBlankDelay > 0f)
+                yield return new WaitForSeconds(previewEndBlankDelay);
+
             if (_paused) yield break;
         }
 
@@ -247,6 +258,9 @@ public class LensMinigameManager : MonoBehaviour
         bool showResult = !IsStartMinigame(finished);
         bool isRegularWin = !isLose && showResult;
 
+        if (!showResult)
+            _nextPreviewClickDelay = gameStartEndPreviewClickDelay;
+
         if (finished != null)
         {
             finished.StopGame();
@@ -309,20 +323,34 @@ public class LensMinigameManager : MonoBehaviour
         QueueNext();
     }
 
-    public void EnterBossWait()
+    public void EnterBossWait(Sprite waitingPreview)
     {
         _waitingForBoss = true;
         HidePreviewTitle();
         SetTimerVisible(false);
         ResetGameCamera();
 
-        if (_current == null)
-            return;
+        if (_current != null)
+        {
+            Detach(_current);
+            _current.StopGame();
+            _current.gameObject.SetActive(false);
+            _current = null;
+        }
 
-        Detach(_current);
-        _current.StopGame();
-        _current.gameObject.SetActive(false);
-        _current = null;
+        ShowPreviewTitle(waitingPreview, false);
+
+        if (bossWaitingPreviewChild != null)
+            bossWaitingPreviewChild.SetActive(true);
+    }
+
+    public void HideBossWaitingPreview()
+    {
+        HidePreviewTitle();
+        SetTimerVisible(false);
+
+        if (bossWaitingPreviewChild != null)
+            bossWaitingPreviewChild.SetActive(false);
     }
 
     public void ResumeAfterBoss()
@@ -447,7 +475,31 @@ public class LensMinigameManager : MonoBehaviour
             _finishRoutine = null;
         }
 
+        if (_previewClickRoutine != null)
+        {
+            StopCoroutine(_previewClickRoutine);
+            _previewClickRoutine = null;
+        }
+
         ResetLoseCamera();
+    }
+
+    private void PlayPreviewClick(float delay)
+    {
+        if (delay <= 0f)
+        {
+            LensAudioService.Instance.Click();
+            return;
+        }
+
+        _previewClickRoutine = StartCoroutine(PlayPreviewClickRoutine(delay));
+    }
+
+    private IEnumerator PlayPreviewClickRoutine(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        LensAudioService.Instance.Click();
+        _previewClickRoutine = null;
     }
 
     private void HideAllMinigames()
@@ -486,7 +538,7 @@ public class LensMinigameManager : MonoBehaviour
         _previewImage = previewTitle.GetComponent<Image>();
     }
 
-    private void ShowPreviewTitle(Sprite sprite)
+    private void ShowPreviewTitle(Sprite sprite, bool showTimer = true)
     {
         if (previewTitle == null)
             ResolvePreviewTitle();
@@ -498,7 +550,7 @@ public class LensMinigameManager : MonoBehaviour
         if (_previewImage != null)
             _previewImage.sprite = sprite;
 
-        SetTimerVisible(sprite != null);
+        SetTimerVisible(showTimer && sprite != null);
         previewTitle.SetActive(sprite != null);
     }
 

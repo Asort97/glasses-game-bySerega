@@ -10,10 +10,18 @@ public class DoodlerBossLevel : BossLevelBase
     [Header("Preview")]
     [SerializeField] private GameObject leftPreviewTitle;
     [SerializeField] private GameObject rightPreviewTitle;
+    [SerializeField] private GameObject leftPreviewTitleName;
+    [SerializeField] private GameObject rightPreviewTitleName;
     [Min(0f)]
     [SerializeField] private float previewImageDuration = 2f;
     [Min(0f)]
     [SerializeField] private float previewAnimationDuration = 3f;
+    [Min(0f)]
+    [SerializeField] private float blankAfterAnimationDuration = 0.2f;
+    [Min(0f)]
+    [SerializeField] private float namePreviewDuration = 2f;
+    [Min(0f)]
+    [SerializeField] private float blankBeforeBossDuration = 0.2f;
     [SerializeField] private Animator leftPreviewAnimator;
     [SerializeField] private Animator rightPreviewAnimator;
     [Min(1)]
@@ -23,6 +31,9 @@ public class DoodlerBossLevel : BossLevelBase
 
     public override float PreviewImageDuration => previewImageDuration;
     public override float PreviewAnimationDuration => previewAnimationDuration;
+    public override float BlankAfterAnimationDuration => blankAfterAnimationDuration;
+    public override float NamePreviewDuration => namePreviewDuration;
+    public override float BlankBeforeBossDuration => blankBeforeBossDuration;
 
     public override void ShowPreviewImage()
     {
@@ -43,11 +54,24 @@ public class DoodlerBossLevel : BossLevelBase
         SetPreviewAnimatorsEnabled(false);
     }
 
+    public override void ShowNamePreview()
+    {
+        leftPreviewTitleName.SetActive(true);
+        rightPreviewTitleName.SetActive(true);
+    }
+
+    public override void HideNamePreview()
+    {
+        leftPreviewTitleName.SetActive(false);
+        rightPreviewTitleName.SetActive(false);
+    }
+
     public override void StartBoss()
     {
         _platformsCleared = 0;
         platformSystem.OnNewPlatformLanded += HandlePlatformLanded;
         HidePreview();
+        HideNamePreview();
         leftBossRoot.SetActive(true);
         rightBossRoot.SetActive(true);
         doodler.ResetForBoss();
@@ -58,6 +82,7 @@ public class DoodlerBossLevel : BossLevelBase
     {
         platformSystem.OnNewPlatformLanded -= HandlePlatformLanded;
         HidePreview();
+        HideNamePreview();
         leftBossRoot.SetActive(false);
         rightBossRoot.SetActive(false);
         base.StopBoss();

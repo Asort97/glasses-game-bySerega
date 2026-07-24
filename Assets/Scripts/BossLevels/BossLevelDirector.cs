@@ -6,11 +6,20 @@ public class BossLevelDirector : MonoBehaviour
     [Header("References")]
     [SerializeField] private LensMinigameManager leftManager;
     [SerializeField] private LensMinigameManager rightManager;
+    [SerializeField] private LensHealthSystem leftHealth;
+    [SerializeField] private LensHealthSystem rightHealth;
     [SerializeField] private BossLevelBase[] bossLevels;
+    [SerializeField] private Sprite bossWaitingPreview;
 
     [Header("Schedule")]
     [Min(1)]
     [SerializeField] private int minigamesPerBoss = 20;
+
+    [Header("Boss Entry")]
+    [Min(0f)]
+    [SerializeField] private float bothWaitingPreviewDuration = 2f;
+    [Min(0f)]
+    [SerializeField] private float heartsHideDelay = 0.2f;
 
     private int _passedMinigames;
     private int _lastBossIndex = -1;
@@ -50,7 +59,7 @@ public class BossLevelDirector : MonoBehaviour
         else
             return;
 
-        manager.EnterBossWait();
+        manager.EnterBossWait(bossWaitingPreview);
 
         if (_leftWaiting && _rightWaiting)
             StartQueuedBoss();
@@ -68,7 +77,25 @@ public class BossLevelDirector : MonoBehaviour
 
         _activeBoss.OnCompleted += HandleBossCompleted;
         _activeBoss.OnFailed += HandleBossFailed;
-        _startRoutine = StartCoroutine(StartBossRoutine(_activeBoss));
+        _startRoutine = StartCoroutine(StartBossEntryRoutine(_activeBoss));
+    }
+
+    private IEnumerator StartBossEntryRoutine(BossLevelBase boss)
+    {
+        if (bothWaitingPreviewDuration > 0f)
+            yield return new WaitForSeconds(bothWaitingPreviewDuration);
+
+        leftManager.HideBossWaitingPreview();
+        rightManager.HideBossWaitingPreview();
+
+        if (heartsHideDelay > 0f)
+            yield return new WaitForSeconds(heartsHideDelay);
+
+        leftHealth.ShowSingleHeartForBoss();
+        rightHealth.ShowSingleHeartForBoss();
+
+        if (_activeBoss == boss)
+            yield return StartBossRoutine(boss);
     }
 
     private IEnumerator StartBossRoutine(BossLevelBase boss)
@@ -84,6 +111,19 @@ public class BossLevelDirector : MonoBehaviour
             yield return new WaitForSeconds(boss.PreviewAnimationDuration);
 
         boss.HidePreview();
+
+        if (boss.BlankAfterAnimationDuration > 0f)
+            yield return new WaitForSeconds(boss.BlankAfterAnimationDuration);
+
+        boss.ShowNamePreview();
+
+        if (boss.NamePreviewDuration > 0f)
+            yield return new WaitForSeconds(boss.NamePreviewDuration);
+
+        boss.HideNamePreview();
+
+        if (boss.BlankBeforeBossDuration > 0f)
+            yield return new WaitForSeconds(boss.BlankBeforeBossDuration);
 
         if (_activeBoss == boss)
             boss.StartBoss();
@@ -141,6 +181,8 @@ public class BossLevelDirector : MonoBehaviour
         boss.StopBoss();
         _activeBoss = null;
         _passedMinigames = 0;
+        leftHealth.RestoreHeartsAfterBoss();
+        rightHealth.RestoreHeartsAfterBoss();
 
         if (_resumeRoutine != null)
             StopCoroutine(_resumeRoutine);

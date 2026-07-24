@@ -161,6 +161,38 @@ public class LensHealthSystem : MonoBehaviour
             manager.SetPaused(true);
     }
 
+    public void ShowSingleHeartForBoss()
+    {
+        if (hearts == null || hearts.Length == 0)
+            return;
+
+        int direction = loseFromLeft ? -1 : 1;
+        int index = loseFromLeft ? hearts.Length - 1 : 0;
+        HeartWidget heartToKeep = null;
+
+        while (index >= 0 && index < hearts.Length)
+        {
+            if (hearts[index] != null && hearts[index].gameObject.activeSelf)
+            {
+                heartToKeep = hearts[index];
+                break;
+            }
+
+            index += direction;
+        }
+
+        foreach (HeartWidget heart in hearts)
+        {
+            if (heart != null)
+                heart.gameObject.SetActive(heart == heartToKeep);
+        }
+    }
+
+    public void RestoreHeartsAfterBoss()
+    {
+        RefreshHeartsUI();
+    }
+
     private void RefreshHeartsUI()
     {
         if (hearts == null) return;

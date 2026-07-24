@@ -10,6 +10,9 @@ public abstract class BossLevelBase : MonoBehaviour
 
     public virtual float PreviewImageDuration => 0f;
     public virtual float PreviewAnimationDuration => 0f;
+    public virtual float BlankAfterAnimationDuration => 0f;
+    public virtual float NamePreviewDuration => 0f;
+    public virtual float BlankBeforeBossDuration => 0f;
 
     public virtual void ShowPreviewImage()
     {
@@ -20,6 +23,14 @@ public abstract class BossLevelBase : MonoBehaviour
     }
 
     public virtual void HidePreview()
+    {
+    }
+
+    public virtual void ShowNamePreview()
+    {
+    }
+
+    public virtual void HideNamePreview()
     {
     }
 

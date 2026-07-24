@@ -11,6 +11,7 @@ public class GameStartMinigame : MinigameBase
 
     [SerializeField] private Transform circle;
     [SerializeField] private ControlMode controlMode = ControlMode.KeyboardSpace;
+    [SerializeField] private CanvasCursor canvasCursor;
     [SerializeField] private bool useSharedStartSequence = true;
     [SerializeField] private GameStartSequenceCoordinator startSequenceCoordinator;
     [SerializeField] private float moveSpeed = 5f;
@@ -64,6 +65,9 @@ public class GameStartMinigame : MinigameBase
         _waitingForSharedSequence = false;
         _completed = false;
 
+        if (controlMode == ControlMode.RightLensCursor)
+            canvasCursor.SetCursorSpriteVisible(false);
+
         if (useSharedStartSequence && startSequenceCoordinator != null)
             startSequenceCoordinator.Register(this);
 
@@ -76,6 +80,9 @@ public class GameStartMinigame : MinigameBase
 
     public override void StopGame()
     {
+        if (controlMode == ControlMode.RightLensCursor)
+            canvasCursor.SetCursorSpriteVisible(true);
+
         if (circle != null)
             circle.DOKill();
 
