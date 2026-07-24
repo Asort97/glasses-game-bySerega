@@ -4620,6 +4620,7 @@ GameObject:
   - component: {fileID: 820713226}
   - component: {fileID: 820713227}
   - component: {fileID: 820713229}
+  - component: {fileID: 820713230}
   m_Layer: 0
   m_Name: LensGameSetup
   m_TagString: Untagged
@@ -4828,9 +4829,26 @@ MonoBehaviour:
   bossLevels:
   - {fileID: 1550675242}
   bossWaitingPreview: {fileID: -493614496, guid: aa1d486b0e1a0ce4ab4234379204e0ee, type: 3}
-  minigamesPerBoss: 6
+  minigamesPerBoss: 20
   bothWaitingPreviewDuration: 2
   heartsHideDelay: 0.2
+--- !u!114 &820713230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 820713222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 687466ef0aa5efb4181b26ed0fc7c76f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bossDirector: {fileID: 820713229}
+  mainCameraTransform: {fileID: 330585546}
+  approachSpeed: 10
+  startZ: -11.2
+  bossZ: -10
 --- !u!1 &830644410
 GameObject:
   m_ObjectHideFlags: 0

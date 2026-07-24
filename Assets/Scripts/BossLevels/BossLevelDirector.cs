@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections;
 
@@ -30,6 +31,11 @@ public class BossLevelDirector : MonoBehaviour
     private Coroutine _startRoutine;
     private Coroutine _resumeRoutine;
 
+    public event Action<int, int> BossProgressChanged;
+
+    public int PassedMinigames => _passedMinigames;
+    public int MinigamesPerBoss => minigamesPerBoss;
+
     public bool NotifyRegularMinigamePassed(LensMinigameManager manager)
     {
         if (manager != leftManager && manager != rightManager)
@@ -42,6 +48,7 @@ public class BossLevelDirector : MonoBehaviour
         {
             _passedMinigames++;
             _bossQueued = _passedMinigames >= minigamesPerBoss;
+            BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
         }
 
         return _bossQueued;
@@ -149,7 +156,7 @@ public class BossLevelDirector : MonoBehaviour
         int selectedIndex;
         do
         {
-            selectedIndex = Random.Range(0, bossLevels.Length);
+            selectedIndex = UnityEngine.Random.Range(0, bossLevels.Length);
         }
         while (bossLevels[selectedIndex] == null
             || (validCount > 1 && selectedIndex == _lastBossIndex));
@@ -181,6 +188,7 @@ public class BossLevelDirector : MonoBehaviour
         boss.StopBoss();
         _activeBoss = null;
         _passedMinigames = 0;
+        BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
         leftHealth.RestoreHeartsAfterBoss();
         rightHealth.RestoreHeartsAfterBoss();
 

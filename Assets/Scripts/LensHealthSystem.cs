@@ -33,11 +33,13 @@ public class LensHealthSystem : MonoBehaviour
 
     private int  _hp;
     private bool _broken;          // линза сейчас выключена
+    private bool _permanentlyBroken;
     private bool _gameOver;
     private float _recoveryTimer;
     private Material _otherLensMaterial;
 
     public bool IsBroken => _broken;
+    public bool IsPermanentlyBroken => _permanentlyBroken;
 
     // Восстановление
     private int  _pressCount;
@@ -56,8 +58,8 @@ public class LensHealthSystem : MonoBehaviour
     {
         if (_broken || _gameOver) return;
 
-        _hp--;
-        if (_hp < 0) _hp = 0;
+        _hp = Mathf.Max(0, _hp - 1);
+        _permanentlyBroken = _hp == 0;
 
         BreakLens(); // каждая потеря HP — линза гаснет и игры останавливаются
     }
@@ -98,6 +100,9 @@ public class LensHealthSystem : MonoBehaviour
             return;
         }
 
+        if (_permanentlyBroken)
+            return;
+
         bool pressed = activationButton == LensButton.Space
             ? Input.GetKeyDown(KeyCode.Space)
             : Input.GetMouseButtonDown(0);
@@ -134,6 +139,9 @@ public class LensHealthSystem : MonoBehaviour
 
     private void RestoreLens()
     {
+        if (_permanentlyBroken)
+            return;
+
         _broken = false;
         _recoveryTimer = 0f;
         SetOtherLensNoise(0f);
@@ -156,7 +164,11 @@ public class LensHealthSystem : MonoBehaviour
     public void StopForGameOver()
     {
         _gameOver = true;
+        _broken = true;
         SetOtherLensNoise(0f);
+        SetLensColor(Color.black);
+        HideAllHearts();
+
         if (manager != null)
             manager.SetPaused(true);
     }
@@ -227,6 +239,13 @@ public class LensHealthSystem : MonoBehaviour
         if (hearts == null) return;
         foreach (var h in hearts)
             if (h != null && h.gameObject.activeSelf) h.Shake();
+    }
+
+    private void HideAllHearts()
+    {
+        if (hearts == null) return;
+        foreach (HeartWidget heart in hearts)
+            if (heart != null) heart.gameObject.SetActive(false);
     }
 
     private void SetLensColor(Color color)
