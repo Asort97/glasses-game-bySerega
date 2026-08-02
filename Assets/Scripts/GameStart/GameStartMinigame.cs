@@ -102,6 +102,16 @@ public class GameStartMinigame : MinigameBase
         RaiseWin();
     }
 
+    public void HideForPostStartCutscene()
+    {
+        _control = false;
+
+        if (circle != null)
+            circle.DOKill();
+
+        gameObject.SetActive(false);
+    }
+
     protected override void Update()
     {
         if (circle == null)

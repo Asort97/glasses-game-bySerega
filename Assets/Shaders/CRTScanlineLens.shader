@@ -13,6 +13,16 @@ Shader "Custom/CRT Scanline Lens"
         _RGBOffset("RGB Offset", Range(0, 0.02)) = 0.003
         _HorizontalBleed("Horizontal Bleed", Range(0, 1)) = 0.2
         _TVNoiseStrength("TV Noise Strength", Range(0, 1)) = 0
+
+        [Toggle] _FlickerBandingEnabled("Flicker Banding Enabled", Float) = 0
+        _FlickerBandingStrength("Flicker Banding Strength", Range(0, 1)) = 0.35
+        _FlickerBandColor("Flicker Band Color", Color) = (0, 0, 0, 1)
+        _FlickerBandCount("Flicker Band Count", Range(1, 12)) = 3
+        _FlickerBandWidth("Flicker Band Width", Range(0.01, 0.95)) = 0.25
+        _FlickerBandSoftness("Flicker Band Softness", Range(0.001, 0.5)) = 0.08
+        _FlickerBandSpeed("Flicker Band Speed", Range(-3, 3)) = 0.5
+        _FlickerBandTilt("Rolling Shutter Tilt", Range(-1, 1)) = 0
+
         _ChromaKeyColor("Chroma Key Color", Color) = (1, 0, 1, 1)
         _ChromaKeyTolerance("Chroma Key Tolerance", Range(0, 1)) = 0.18
         _ScreenTint("Screen Tint", Color) = (0.9, 1, 0.82, 1)
@@ -72,6 +82,14 @@ Shader "Custom/CRT Scanline Lens"
                 half _RGBOffset;
                 half _HorizontalBleed;
                 half _TVNoiseStrength;
+                half _FlickerBandingEnabled;
+                half _FlickerBandingStrength;
+                half4 _FlickerBandColor;
+                half _FlickerBandCount;
+                half _FlickerBandWidth;
+                half _FlickerBandSoftness;
+                half _FlickerBandSpeed;
+                half _FlickerBandTilt;
                 half4 _ChromaKeyColor;
                 half _ChromaKeyTolerance;
                 half4 _ScreenTint;
@@ -195,6 +213,29 @@ Shader "Custom/CRT Scanline Lens"
                 return color;
             }
 
+            half3 ApplyFlickerBanding(float2 uv, half3 color)
+            {
+                half strength = saturate(_FlickerBandingStrength)
+                    * step(0.5h, _FlickerBandingEnabled);
+
+                if (strength <= 0.0001h)
+                    return color;
+
+                float phase = frac(
+                    uv.y * max(_FlickerBandCount, 1.0h)
+                    + uv.x * _FlickerBandTilt
+                    - _Time.y * _FlickerBandSpeed);
+
+                float centerDistance = abs(phase - 0.5) * 2.0;
+                half band = 1.0h - smoothstep(
+                    _FlickerBandWidth,
+                    min(1.0h, _FlickerBandWidth + _FlickerBandSoftness),
+                    centerDistance);
+
+                half blend = band * strength * _FlickerBandColor.a;
+                return lerp(color, _FlickerBandColor.rgb, blend);
+            }
+
             half GetScanlineMask(float2 uv, half strength)
             {
                 float linePhase = frac(uv.y * max(_LineCount, 1.0h));
@@ -223,6 +264,7 @@ Shader "Custom/CRT Scanline Lens"
                 half vignette = saturate(1.0h - dot(centered, centered) * _VignetteStrength * strength);
                 color *= vignette;
                 color = ApplyTVNoise(uv, color);
+                color = ApplyFlickerBanding(uv, color);
 
                 return half4(saturate(color), baseColor.a);
             }

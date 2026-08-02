@@ -19,6 +19,7 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private LensHealthSystem health;
     [SerializeField] private LensAudioService audioService;
     [SerializeField] private BossLevelDirector bossDirector;
+    [SerializeField] private MiniTutorialController tutorialController;
 
     [Header("Game Camera")]
     [SerializeField] private Transform gameCameraTransform;
@@ -80,6 +81,7 @@ public class LensMinigameManager : MonoBehaviour
         StopSwitchRoutine();
         HideConfiguredMinigames();
         HidePreviewTitle();
+        HideTutorial();
         ResetGameCamera();
         StartMinigame(_testMinigame);
     }
@@ -98,6 +100,7 @@ public class LensMinigameManager : MonoBehaviour
     {
         ResolvePreviewTitle();
         HidePreviewTitle();
+        HideTutorial();
         ResetGameCamera();
 
         if (timerFillParent != null)
@@ -140,6 +143,7 @@ public class LensMinigameManager : MonoBehaviour
         {
             StopSwitchRoutine();
             HidePreviewTitle();
+            HideTutorial();
 
             // Остановить текущую мини-игру и скрыть
             if (_current != null)
@@ -167,6 +171,7 @@ public class LensMinigameManager : MonoBehaviour
     {
         HideAllMinigames();
         HidePreviewTitle();
+        HideTutorial();
         SetTimerVisible(false);
 
         yield return null;
@@ -183,11 +188,13 @@ public class LensMinigameManager : MonoBehaviour
             if (_paused) yield break;
 
             ShowPreviewTitle(next.PreviewTitleSprite);
+            ShowTutorial(next.TutorialType);
             PlayPreviewClick(_nextPreviewClickDelay);
             _nextPreviewClickDelay = 0f;
             yield return new WaitForSeconds(previewDuration);
 
             HidePreviewTitle();
+            HideTutorial();
 
             if (previewEndBlankDelay > 0f)
                 yield return new WaitForSeconds(previewEndBlankDelay);
@@ -249,6 +256,7 @@ public class LensMinigameManager : MonoBehaviour
 
     private void StartMinigame(MinigameBase next)
     {
+        HideTutorial();
         ResetGameCamera();
         _current = next;
         _current.OnWin  += HandleWin;
@@ -337,6 +345,7 @@ public class LensMinigameManager : MonoBehaviour
     {
         _waitingForBoss = true;
         HidePreviewTitle();
+        HideTutorial();
         SetTimerVisible(false);
         ResetGameCamera();
 
@@ -588,6 +597,18 @@ public class LensMinigameManager : MonoBehaviour
         {
             previewTitle.SetActive(false);
         }
+    }
+
+    private void ShowTutorial(MiniTutorialType type)
+    {
+        if (tutorialController != null)
+            tutorialController.Show(type);
+    }
+
+    private void HideTutorial()
+    {
+        if (tutorialController != null)
+            tutorialController.Hide();
     }
 
     private void SetTimerVisible(bool visible)

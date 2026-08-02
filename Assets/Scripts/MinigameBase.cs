@@ -8,10 +8,12 @@ public abstract class MinigameBase : MonoBehaviour
 {
     [SerializeField] protected float surviveTime = 10f;
     [SerializeField] private Sprite previewTitleSprite;
+    [SerializeField] private MiniTutorialType tutorialType;
 
     /// <summary>0 = пусто, 1 = полный таймер</summary>
     public float Progress { get; protected set; } = 1f;
     public Sprite PreviewTitleSprite => previewTitleSprite != null ? previewTitleSprite : GetFallbackPreviewSprite();
+    public MiniTutorialType TutorialType => tutorialType;
 
     public event System.Action OnWin;
     public event System.Action OnLose;

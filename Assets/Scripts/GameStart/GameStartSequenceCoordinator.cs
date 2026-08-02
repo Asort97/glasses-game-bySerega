@@ -9,6 +9,9 @@ public class GameStartSequenceCoordinator : MonoBehaviour
     [SerializeField] private GameStartMinigame[] gameStarts;
     [SerializeField] private int requiredActivations = 2;
 
+    [Header("Post Start Cutscene")]
+    [SerializeField] private SynchronizedLensCutscene postStartCutscene;
+
     [Header("Menu")]
     [SerializeField] private GameObject[] menuIcons;
 
@@ -63,6 +66,9 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         _completed = false;
         _musicRampProgress = 0f;
 
+        if (postStartCutscene != null)
+            postStartCutscene.StopAndHide();
+
         PrepareInitialState();
     }
 
@@ -106,6 +112,11 @@ public class GameStartSequenceCoordinator : MonoBehaviour
 
         AccelerateSequence();
         yield return WaitSequence(startDelayAfterReady);
+
+        HideGameStartsForCutscene();
+
+        if (postStartCutscene != null)
+            yield return postStartCutscene.Play();
 
         CompleteGameStarts();
     }
@@ -265,6 +276,15 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         {
             if (gameStart != null)
                 gameStart.CompleteFromStartSequence();
+        }
+    }
+
+    private void HideGameStartsForCutscene()
+    {
+        foreach (GameStartMinigame gameStart in GetKnownGameStarts())
+        {
+            if (gameStart != null)
+                gameStart.HideForPostStartCutscene();
         }
     }
 
