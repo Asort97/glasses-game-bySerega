@@ -15,17 +15,9 @@ public class GameStartSequenceCoordinator : MonoBehaviour
     [Header("Menu")]
     [SerializeField] private GameObject[] menuIcons;
 
-    [Header("Hearts")]
-    [SerializeField] private GameObject[] heartsRoots;
-
     [Header("Timing")]
     [SerializeField] private float menuIconHideDuration = 0.12f;
     [SerializeField] private float menuIconHideInterval = 0.12f;
-    [SerializeField] private float heartsAppearWindow = 3f;
-    [SerializeField] private float heartFlickerDuration = 0.45f;
-    [SerializeField] private Vector2Int heartFlickerCountRange = new Vector2Int(0, 4);
-    [SerializeField] private Vector2 heartFlickerOffTimeRange = new Vector2(0.035f, 0.12f);
-    [SerializeField] private Vector2 heartFlickerOnTimeRange = new Vector2(0.04f, 0.16f);
     [SerializeField] private float startDelayAfterReady = 0.35f;
     [SerializeField] private float fastAnimationMultiplier = 3f;
 
@@ -40,7 +32,6 @@ public class GameStartSequenceCoordinator : MonoBehaviour
     private readonly HashSet<GameStartMinigame> _registered = new HashSet<GameStartMinigame>();
     private readonly HashSet<GameStartMinigame> _activated = new HashSet<GameStartMinigame>();
     private readonly Dictionary<Transform, Vector3> _startScales = new Dictionary<Transform, Vector3>();
-    private readonly List<Coroutine> _heartRoutines = new List<Coroutine>();
 
     private Coroutine _sequenceRoutine;
     private bool _prepared;
@@ -53,12 +44,7 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         if (_sequenceRoutine != null)
             StopCoroutine(_sequenceRoutine);
 
-        foreach (Coroutine heartRoutine in _heartRoutines)
-            if (heartRoutine != null)
-                StopCoroutine(heartRoutine);
-
         _sequenceRoutine = null;
-        _heartRoutines.Clear();
         _registered.Clear();
         _activated.Clear();
         _prepared = false;
@@ -102,7 +88,6 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         PrepareInitialState();
 
         yield return HideMenuIconsRoutine();
-        yield return ShowHeartsRoutine();
 
         while (_activated.Count < Mathf.Max(1, requiredActivations))
         {
@@ -138,80 +123,6 @@ public class GameStartSequenceCoordinator : MonoBehaviour
             icon.SetActive(false);
             yield return WaitSequence(menuIconHideInterval);
         }
-    }
-
-    private IEnumerator ShowHeartsRoutine()
-    {
-        List<GameObject> hearts = CollectHeartObjects();
-        _heartRoutines.Clear();
-
-        foreach (GameObject heart in hearts)
-            SetHeartVisible(heart, false);
-
-        foreach (GameObject root in heartsRoots)
-        {
-            if (root != null)
-                root.SetActive(true);
-        }
-
-        foreach (GameObject heart in hearts)
-        {
-            if (heart == null)
-                continue;
-
-            float delay = Random.Range(0f, Mathf.Max(0f, heartsAppearWindow));
-            _heartRoutines.Add(StartCoroutine(AnimateHeartLampAppear(heart, delay)));
-        }
-
-        float elapsed = 0f;
-        while (elapsed < heartsAppearWindow + heartFlickerDuration)
-        {
-            elapsed += Time.deltaTime * GetSequenceSpeed();
-            TickMusicRamp();
-            yield return null;
-        }
-
-        foreach (GameObject heart in hearts)
-        {
-            if (heart == null)
-                continue;
-
-            heart.SetActive(true);
-            heart.transform.localScale = GetStartScale(heart.transform);
-            SetGraphicsAlpha(heart, 1f);
-        }
-
-        _heartRoutines.Clear();
-    }
-
-    private IEnumerator AnimateHeartLampAppear(GameObject heart, float startDelay)
-    {
-        yield return WaitSequence(startDelay);
-
-        Transform heartTransform = heart.transform;
-        Vector3 startScale = GetStartScale(heartTransform);
-        heartTransform.localScale = startScale;
-
-        int flickerCount = Random.Range(heartFlickerCountRange.x, heartFlickerCountRange.y + 1);
-        for (int i = 0; i < flickerCount; i++)
-        {
-            SetHeartLampState(heart, true);
-            yield return WaitSequence(Random.Range(heartFlickerOnTimeRange.x, heartFlickerOnTimeRange.y));
-
-            SetHeartLampState(heart, false);
-            yield return WaitSequence(Random.Range(heartFlickerOffTimeRange.x, heartFlickerOffTimeRange.y));
-        }
-
-        SetHeartLampState(heart, true);
-    }
-
-    private void SetHeartLampState(GameObject heart, bool enabled)
-    {
-        if (heart == null)
-            return;
-
-        heart.SetActive(enabled);
-        SetGraphicsAlpha(heart, enabled ? 1f : 0f);
     }
 
     private IEnumerator AnimateScale(Transform target, Vector3 from, Vector3 to, float duration)
@@ -313,11 +224,6 @@ public class GameStartSequenceCoordinator : MonoBehaviour
             }
         }
 
-        foreach (GameObject root in heartsRoots)
-        {
-            if (root != null)
-                root.SetActive(false);
-        }
     }
 
     private IEnumerable<GameStartMinigame> GetKnownGameStarts()
@@ -338,42 +244,6 @@ public class GameStartSequenceCoordinator : MonoBehaviour
             if (gameStart != null && known.Add(gameStart))
                 yield return gameStart;
         }
-    }
-
-    private List<GameObject> CollectHeartObjects()
-    {
-        List<GameObject> hearts = new List<GameObject>();
-        if (heartsRoots == null)
-            return hearts;
-
-        foreach (GameObject root in heartsRoots)
-        {
-            if (root == null)
-                continue;
-
-            HeartWidget[] widgets = root.GetComponentsInChildren<HeartWidget>(true);
-            if (widgets.Length > 0)
-            {
-                foreach (HeartWidget widget in widgets)
-                    hearts.Add(widget.gameObject);
-                continue;
-            }
-
-            for (int i = 0; i < root.transform.childCount; i++)
-                hearts.Add(root.transform.GetChild(i).gameObject);
-        }
-
-        return hearts;
-    }
-
-    private void SetHeartVisible(GameObject heart, bool visible)
-    {
-        if (heart == null)
-            return;
-
-        heart.SetActive(visible);
-        if (visible)
-            SetGraphicsAlpha(heart, 1f);
     }
 
     private Vector3 GetStartScale(Transform target)

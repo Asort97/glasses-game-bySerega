@@ -9,6 +9,7 @@ public class LensGameOverController : MonoBehaviour
     [SerializeField] private BossLevelDirector bossLevelDirector;
     [SerializeField] private BossApproachCamera bossApproachCamera;
     [SerializeField] private GameStartSequenceCoordinator gameStartSequenceCoordinator;
+    [SerializeField] private LensCrtPowerOffController crtPowerOffController;
     [Min(0f)] [SerializeField] private float restartDelay = 3f;
 
     private LensHealthSystem _recoveringLens;
@@ -74,10 +75,23 @@ public class LensGameOverController : MonoBehaviour
 
     private IEnumerator RestartAfterDelay()
     {
+        if (crtPowerOffController != null)
+            yield return crtPowerOffController.PlayPowerOff();
+
+        if (healthSystems != null)
+        {
+            foreach (LensHealthSystem health in healthSystems)
+                if (health != null)
+                    health.CompleteGameOverShutdown();
+        }
+
         yield return new WaitForSecondsRealtime(restartDelay);
 
         _gameOver = false;
         _recoveringLens = null;
+        if (crtPowerOffController != null)
+            crtPowerOffController.ResetEffect();
+
         bossLevelDirector.ResetForNewRun();
         bossApproachCamera.ResetImmediately();
         gameStartSequenceCoordinator.ResetSequence();

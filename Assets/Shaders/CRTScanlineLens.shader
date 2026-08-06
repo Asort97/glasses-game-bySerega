@@ -14,6 +14,9 @@ Shader "Custom/CRT Scanline Lens"
         _HorizontalBleed("Horizontal Bleed", Range(0, 1)) = 0.2
         _TVNoiseStrength("TV Noise Strength", Range(0, 1)) = 0
 
+        [Toggle] _CRTPowerOffEnabled("CRT Power Off Enabled", Float) = 0
+        _CRTPowerOffProgress("CRT Power Off Progress", Range(0, 1)) = 0
+
         [Toggle] _FlickerBandingEnabled("Flicker Banding Enabled", Float) = 0
         _FlickerBandingStrength("Flicker Banding Strength", Range(0, 1)) = 0.35
         _FlickerBandColor("Flicker Band Color", Color) = (0, 0, 0, 1)
@@ -82,6 +85,8 @@ Shader "Custom/CRT Scanline Lens"
                 half _RGBOffset;
                 half _HorizontalBleed;
                 half _TVNoiseStrength;
+                half _CRTPowerOffEnabled;
+                half _CRTPowerOffProgress;
                 half _FlickerBandingEnabled;
                 half _FlickerBandingStrength;
                 half4 _FlickerBandColor;
@@ -236,6 +241,79 @@ Shader "Custom/CRT Scanline Lens"
                 return lerp(color, _FlickerBandColor.rgb, blend);
             }
 
+            float2 GetCrtPowerOffSampleUv(float2 displayUv)
+            {
+                half progress = saturate(_CRTPowerOffProgress)
+                    * step(0.5h, _CRTPowerOffEnabled);
+
+                if (progress <= 0.0001h)
+                    return displayUv;
+
+                half verticalProgress = saturate(progress / 0.72h);
+                half horizontalProgress = saturate((progress - 0.72h) / 0.28h);
+                verticalProgress = verticalProgress * verticalProgress
+                    * (3.0h - 2.0h * verticalProgress);
+                horizontalProgress = horizontalProgress * horizontalProgress;
+
+                half verticalSize = lerp(1.0h, 0.012h, verticalProgress);
+                half horizontalSize = lerp(1.0h, 0.004h, horizontalProgress);
+                float2 collapsedSize = float2(horizontalSize, verticalSize);
+
+                return saturate(0.5 + (displayUv - 0.5) / collapsedSize);
+            }
+
+            half3 ApplyCrtPowerOff(float2 uv, half3 color)
+            {
+                half progress = saturate(_CRTPowerOffProgress)
+                    * step(0.5h, _CRTPowerOffEnabled);
+
+                if (progress <= 0.0001h)
+                    return color;
+                if (progress >= 0.9999h)
+                    return half3(0.0h, 0.0h, 0.0h);
+
+                half verticalProgress = saturate(progress / 0.72h);
+                half horizontalProgress = saturate((progress - 0.72h) / 0.28h);
+
+                verticalProgress = verticalProgress * verticalProgress
+                    * (3.0h - 2.0h * verticalProgress);
+                horizontalProgress = horizontalProgress * horizontalProgress;
+
+                float2 centerDistance = abs(uv - 0.5) * 2.0;
+                half verticalHalfSize = lerp(1.0h, 0.012h, verticalProgress);
+                half horizontalHalfSize = lerp(1.0h, 0.004h, horizontalProgress);
+                half verticalSoftness = max((half)fwidth(uv.y) * 3.0h, 0.002h);
+                half horizontalSoftness = max((half)fwidth(uv.x) * 3.0h, 0.002h);
+
+                half verticalMask = 1.0h - smoothstep(
+                    verticalHalfSize,
+                    verticalHalfSize + verticalSoftness,
+                    centerDistance.y);
+                half horizontalMask = 1.0h - smoothstep(
+                    horizontalHalfSize,
+                    horizontalHalfSize + horizontalSoftness,
+                    centerDistance.x);
+                half screenMask = verticalMask * horizontalMask;
+
+                half lineWidth = lerp(0.12h, 0.018h, verticalProgress);
+                half lineGlow = exp(-centerDistance.y * centerDistance.y
+                    / max(lineWidth * lineWidth, 0.0001h));
+                lineGlow *= smoothstep(0.08h, 0.82h, verticalProgress);
+                lineGlow *= horizontalMask;
+
+                half pointWidth = lerp(0.16h, 0.025h, horizontalProgress);
+                half pointGlow = exp(-dot(centerDistance, centerDistance)
+                    / max(pointWidth * pointWidth, 0.0001h));
+                pointGlow *= horizontalProgress;
+
+                half afterglow = (lineGlow * 0.85h + pointGlow * 1.25h)
+                    * (1.0h - smoothstep(0.9h, 1.0h, progress));
+                half finalFade = 1.0h - smoothstep(0.97h, 1.0h, progress);
+
+                half3 glow = half3(afterglow, afterglow, afterglow);
+                return saturate((color * screenMask + glow) * finalFade);
+            }
+
             half GetScanlineMask(float2 uv, half strength)
             {
                 float linePhase = frac(uv.y * max(_LineCount, 1.0h));
@@ -247,13 +325,14 @@ Shader "Custom/CRT Scanline Lens"
             half4 Frag(Varyings input) : SV_Target
             {
                 half strength = saturate(_EffectStrength);
-                float2 uv = ApplyWarp(input.uv, strength);
+                float2 displayUv = ApplyWarp(input.uv, strength);
 
-                if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
+                if (displayUv.x < 0.0 || displayUv.x > 1.0 || displayUv.y < 0.0 || displayUv.y > 1.0)
                 {
                     return half4(0.0, 0.0, 0.0, 1.0);
                 }
 
+                float2 uv = GetCrtPowerOffSampleUv(displayUv);
                 half4 baseColor = SampleBase(uv);
                 half3 color = strength <= 0.0001h ? baseColor.rgb : SampleRgbSplit(uv, strength);
                 color = ApplyHorizontalBleed(uv, color, strength);
@@ -265,6 +344,7 @@ Shader "Custom/CRT Scanline Lens"
                 color *= vignette;
                 color = ApplyTVNoise(uv, color);
                 color = ApplyFlickerBanding(uv, color);
+                color = ApplyCrtPowerOff(displayUv, color);
 
                 return half4(saturate(color), baseColor.a);
             }

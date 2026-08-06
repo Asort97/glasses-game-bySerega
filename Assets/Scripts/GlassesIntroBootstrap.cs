@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// Boots the scene after the glasses appearance animation.
-/// Keeps lenses, hearts and minigames hidden until the intro animation is fully finished.
+/// Keeps lenses and minigames hidden until the intro animation is fully finished.
 /// </summary>
 public sealed class GlassesIntroBootstrap : MonoBehaviour
 {
@@ -15,7 +15,6 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
     [Header("Scene Objects")]
     [SerializeField] private GameObject[] gameplayRoots;
-    [SerializeField] private GameObject[] heartsRoots;
     [SerializeField] private Renderer[] lensRenderers;
     [SerializeField] private LensMinigameManager[] minigameManagers;
     [SerializeField] private DesktopScreenshotBackground desktopScreenshotBackground;
@@ -74,15 +73,6 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
             };
         }
 
-        if (heartsRoots == null || heartsRoots.Length == 0)
-        {
-            heartsRoots = new[]
-            {
-                FindSceneObject("LeftLensHearts"),
-                FindSceneObject("RightLensHearts")
-            };
-        }
-
         if (lensRenderers == null || lensRenderers.Length == 0)
         {
             lensRenderers = new[]
@@ -102,7 +92,6 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
     {
         SetManagersEnabled(false);
         HideMinigames();
-        SetActive(heartsRoots, false);
         SetLensColor(hiddenLensColor);
         // LensAudioService.Instance.PlayTVon(false);
 
@@ -115,7 +104,6 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         SetManagersEnabled(false);
         SetActive(gameplayRoots, true);
         HideMinigames();
-        SetActive(heartsRoots, false);
         SetLensColor(hiddenLensColor);
 
         if (testGame != null)
@@ -177,7 +165,6 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
             desktopScreenshotBackground.PlayLensEnabledEffect();
 
         SetActive(gameplayRoots, true);
-        SetActive(heartsRoots, true);
         StartManagers();
     }
 

@@ -20,6 +20,7 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private LensAudioService audioService;
     [SerializeField] private BossLevelDirector bossDirector;
     [SerializeField] private MiniTutorialController tutorialController;
+    [SerializeField] private LensLossPresentation lossPresentation;
 
     [Header("Game Camera")]
     [SerializeField] private Transform gameCameraTransform;
@@ -36,6 +37,7 @@ public class LensMinigameManager : MonoBehaviour
     private int[]            _order;
     private int              _orderIndex;
     private MinigameBase     _current;
+    private MinigameBase     _pausedMinigame;
     private int              _lastIdx = -1;
     private bool             _paused;
     private SpriteRenderer   _previewSpriteRenderer;
@@ -82,6 +84,7 @@ public class LensMinigameManager : MonoBehaviour
         HideConfiguredMinigames();
         HidePreviewTitle();
         HideTutorial();
+        HideLossPresentation();
         ResetGameCamera();
         StartMinigame(_testMinigame);
     }
@@ -92,6 +95,7 @@ public class LensMinigameManager : MonoBehaviour
         _testMinigame = null;
         _paused = false;
         _waitingForBoss = false;
+        _pausedMinigame = null;
         enabled = true;
         Begin(true);
     }
@@ -101,6 +105,7 @@ public class LensMinigameManager : MonoBehaviour
         ResolvePreviewTitle();
         HidePreviewTitle();
         HideTutorial();
+        HideLossPresentation();
         ResetGameCamera();
 
         if (timerFillParent != null)
@@ -148,6 +153,7 @@ public class LensMinigameManager : MonoBehaviour
             // Остановить текущую мини-игру и скрыть
             if (_current != null)
             {
+                _pausedMinigame = _current;
                 Detach(_current);
                 _current.StopGame();
                 _current.gameObject.SetActive(false);
@@ -161,6 +167,17 @@ public class LensMinigameManager : MonoBehaviour
         }
     }
 
+    public void ShowGameOverVisual()
+    {
+        HidePreviewTitle();
+        HideTutorial();
+        HideLossPresentation();
+        SetTimerVisible(false);
+
+        if (_pausedMinigame != null)
+            _pausedMinigame.gameObject.SetActive(true);
+    }
+
     private void QueueNext(bool showPreview = true)
     {
         StopSwitchRoutine();
@@ -172,6 +189,7 @@ public class LensMinigameManager : MonoBehaviour
         HideAllMinigames();
         HidePreviewTitle();
         HideTutorial();
+        HideLossPresentation();
         SetTimerVisible(false);
 
         yield return null;
@@ -257,7 +275,9 @@ public class LensMinigameManager : MonoBehaviour
     private void StartMinigame(MinigameBase next)
     {
         HideTutorial();
+        HideLossPresentation();
         ResetGameCamera();
+        _pausedMinigame = null;
         _current = next;
         _current.OnWin  += HandleWin;
         _current.OnLose += HandleLose;
@@ -293,17 +313,21 @@ public class LensMinigameManager : MonoBehaviour
         if (_finishRoutine != null)
             StopCoroutine(_finishRoutine);
 
-        _finishRoutine = StartCoroutine(FinishGameRoutine(isLose, showResult, isRegularWin));
+        _finishRoutine = StartCoroutine(FinishGameRoutine(finished, isLose, showResult, isRegularWin));
     }
 
-    private IEnumerator FinishGameRoutine(bool isLose, bool showResult, bool isRegularWin)
+    private IEnumerator FinishGameRoutine(
+        MinigameBase finished,
+        bool isLose,
+        bool showResult,
+        bool isRegularWin)
     {
         if (showResult)
         {
             PlayResultSound(isLose);
             ShowResultTitle(isLose ? loseResultSprite : winResultSprite);
             if (isLose)
-                yield return ShakeLoseResult();
+                yield return ShakeLoseResult(finished);
             else
                 yield return BlinkResultTitle();
             HidePreviewTitle();
@@ -346,6 +370,7 @@ public class LensMinigameManager : MonoBehaviour
         _waitingForBoss = true;
         HidePreviewTitle();
         HideTutorial();
+        HideLossPresentation();
         SetTimerVisible(false);
         ResetGameCamera();
 
@@ -408,29 +433,29 @@ public class LensMinigameManager : MonoBehaviour
             previewTitle.SetActive(true);
     }
 
-    private IEnumerator ShakeLoseResult()
+    private IEnumerator ShakeLoseResult(MinigameBase finished)
     {
-        if (lensCameraTransform == null)
+        if (lensCameraTransform != null)
         {
-            yield return new WaitForSeconds(resultDuration);
-            yield break;
+            _cameraShakeActive = true;
+            _cameraStartLocalPosition = lensCameraTransform.localPosition;
+
+            int vibrato = Mathf.Max(1, Mathf.RoundToInt(resultDuration * loseCameraShakeSpeed));
+            _cameraShakeTween = DOTween.Shake(
+                () => lensCameraTransform.localPosition,
+                value => lensCameraTransform.localPosition = value,
+                resultDuration,
+                loseCameraShakeAmplitude,
+                vibrato,
+                90f,
+                true,
+                false);
         }
 
-        _cameraShakeActive = true;
-        _cameraStartLocalPosition = lensCameraTransform.localPosition;
-
-        int vibrato = Mathf.Max(1, Mathf.RoundToInt(resultDuration * loseCameraShakeSpeed));
-        _cameraShakeTween = DOTween.Shake(
-            () => lensCameraTransform.localPosition,
-            value => lensCameraTransform.localPosition = value,
-            resultDuration,
-            loseCameraShakeAmplitude,
-            vibrato,
-            90f,
-            true,
-            false);
-
-        yield return _cameraShakeTween.WaitForCompletion();
+        if (lossPresentation != null && health != null)
+            yield return lossPresentation.Play(finished != null ? finished.gameObject : null, health, resultDuration);
+        else
+            yield return new WaitForSeconds(resultDuration);
 
         ResetLoseCamera();
     }
@@ -609,6 +634,12 @@ public class LensMinigameManager : MonoBehaviour
     {
         if (tutorialController != null)
             tutorialController.Hide();
+    }
+
+    private void HideLossPresentation()
+    {
+        if (lossPresentation != null)
+            lossPresentation.Hide();
     }
 
     private void SetTimerVisible(bool visible)
