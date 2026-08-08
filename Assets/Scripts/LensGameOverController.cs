@@ -89,9 +89,6 @@ public class LensGameOverController : MonoBehaviour
 
         _gameOver = false;
         _recoveringLens = null;
-        if (crtPowerOffController != null)
-            crtPowerOffController.ResetEffect();
-
         bossLevelDirector.ResetForNewRun();
         bossApproachCamera.ResetImmediately();
         gameStartSequenceCoordinator.ResetSequence();
@@ -101,5 +98,8 @@ public class LensGameOverController : MonoBehaviour
 
         foreach (LensMinigameManager manager in minigameManagers)
             manager.RestartFromGameStart();
+
+        if (crtPowerOffController != null)
+            yield return crtPowerOffController.PlayPowerOn();
     }
 }

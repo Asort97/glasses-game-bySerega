@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Boots the scene after the glasses appearance animation.
@@ -12,12 +13,16 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
     [SerializeField] private string glassesAnimatorObjectName = "Glasses_Appearance_Animation (3)";
     [SerializeField] private float fallbackAnimationWait = 3f;
     [SerializeField] private float animationEndPadding = 0.05f;
+    [SerializeField] private string exitAnimationStateName = "Exit";
+    [FormerlySerializedAs("reverseAnimationSpeed")]
+    [Min(0.01f)] [SerializeField] private float exitAnimationSpeed = 2f;
 
     [Header("Scene Objects")]
     [SerializeField] private GameObject[] gameplayRoots;
     [SerializeField] private Renderer[] lensRenderers;
     [SerializeField] private LensMinigameManager[] minigameManagers;
     [SerializeField] private DesktopScreenshotBackground desktopScreenshotBackground;
+    [SerializeField] private LensCrtPowerOffController crtPowerOffController;
 
     [Header("Test Mode")]
     [SerializeField] private bool testMode;
@@ -145,9 +150,10 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
             }
 
             manager.StartTestMinigame(minigame);
-            yield break;
         }
 
+        if (crtPowerOffController != null)
+            yield return crtPowerOffController.PlayPowerOn();
     }
 
     private IEnumerator BootstrapRoutine()
@@ -166,6 +172,9 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
         SetActive(gameplayRoots, true);
         StartManagers();
+
+        if (crtPowerOffController != null)
+            yield return crtPowerOffController.PlayPowerOn();
     }
 
     private IEnumerator PlayIntroAnimation()
@@ -190,6 +199,41 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         wait += animationEndPadding;
         if (wait > 0f)
             yield return new WaitForSecondsRealtime(wait);
+    }
+
+    public IEnumerator PlayExitAnimation()
+    {
+        yield return PlayExitAnimation(1f);
+    }
+
+    public IEnumerator PlayExitAnimation(float speedMultiplier)
+    {
+        if (glassesAnimator == null)
+            yield break;
+
+        glassesAnimator.gameObject.SetActive(true);
+        glassesAnimator.enabled = true;
+
+        float originalSpeed = glassesAnimator.speed;
+        float playbackSpeed = Mathf.Max(0.01f, exitAnimationSpeed)
+            * Mathf.Max(0.01f, speedMultiplier);
+        float duration = GetClipLength(glassesAnimator, exitAnimationStateName) / playbackSpeed;
+        int stateHash = Animator.StringToHash("Base Layer." + exitAnimationStateName);
+        glassesAnimator.speed = 0f;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float normalizedTime = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
+            glassesAnimator.Play(stateHash, 0, normalizedTime);
+            glassesAnimator.Update(0f);
+            yield return null;
+        }
+
+        glassesAnimator.Play(stateHash, 0, 1f);
+        glassesAnimator.Update(0f);
+        glassesAnimator.speed = originalSpeed;
     }
 
     private void SetLensColor(Color color)
@@ -286,6 +330,19 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         }
 
         return longest;
+    }
+
+    private static float GetClipLength(Animator animator, string clipName)
+    {
+        RuntimeAnimatorController controller = animator.runtimeAnimatorController;
+        if (controller != null && controller.animationClips != null)
+        {
+            foreach (AnimationClip clip in controller.animationClips)
+                if (clip != null && clip.name == clipName)
+                    return clip.length;
+        }
+
+        return GetLongestClipLength(animator);
     }
 
     private static Renderer FindRenderer(string objectName)

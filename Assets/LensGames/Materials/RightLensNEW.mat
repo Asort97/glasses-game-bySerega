@@ -12,7 +12,8 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _FLICKERBANDSONLYENABLED_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -90,6 +91,8 @@ Material:
     - _BlendModePreserveSpecular: 1
     - _BlendOp: 0
     - _BumpScale: 1
+    - _CRTPowerOffEnabled: 0
+    - _CRTPowerOffProgress: 0
     - _CRTStrength: 0
     - _ChromaKeyTolerance: 0.21
     - _ClearCoatMask: 0
@@ -102,13 +105,15 @@ Material:
     - _DstBlendAlpha: 0
     - _EffectStrength: 0
     - _EnvironmentReflections: 0
-    - _FlickerBandCount: 4
-    - _FlickerBandSoftness: 0.5
+    - _FlickerBandCount: 2.38
+    - _FlickerBandHorizontalDistortion: 0.04
+    - _FlickerBandSoftness: 0.274
     - _FlickerBandSpeed: 3
     - _FlickerBandTilt: 0
-    - _FlickerBandWidth: 0.488
+    - _FlickerBandWidth: 0.422
     - _FlickerBandingEnabled: 0
-    - _FlickerBandingStrength: 1
+    - _FlickerBandingStrength: 0.574
+    - _FlickerBandsOnlyEnabled: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0

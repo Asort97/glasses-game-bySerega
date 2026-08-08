@@ -5,6 +5,7 @@ public class LensCrtPowerOffController : MonoBehaviour
 {
     [SerializeField] private Renderer[] lensRenderers = new Renderer[0];
     [Min(0.01f)] [SerializeField] private float powerOffDuration = 0.5f;
+    [Min(0.01f)] [SerializeField] private float powerOnDuration = 0.5f;
 
     private static readonly int EnabledId = Shader.PropertyToID("_CRTPowerOffEnabled");
     private static readonly int ProgressId = Shader.PropertyToID("_CRTPowerOffProgress");
@@ -19,11 +20,17 @@ public class LensCrtPowerOffController : MonoBehaviour
 
     public IEnumerator PlayPowerOff()
     {
+        yield return PlayPowerOff(1f);
+    }
+
+    public IEnumerator PlayPowerOff(float speedMultiplier)
+    {
         CacheMaterials();
         SetEffect(true, 0f);
 
         float elapsed = 0f;
-        float duration = Mathf.Max(0.01f, powerOffDuration);
+        float duration = Mathf.Max(0.01f, powerOffDuration)
+            / Mathf.Max(0.01f, speedMultiplier);
 
         while (elapsed < duration)
         {
@@ -33,6 +40,24 @@ public class LensCrtPowerOffController : MonoBehaviour
         }
 
         SetEffect(true, 1f);
+    }
+
+    public IEnumerator PlayPowerOn()
+    {
+        CacheMaterials();
+        SetEffect(true, 1f);
+
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.01f, powerOnDuration);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            SetEffect(true, 1f - Mathf.Clamp01(elapsed / duration));
+            yield return null;
+        }
+
+        ResetEffect();
     }
 
     public void ResetEffect()

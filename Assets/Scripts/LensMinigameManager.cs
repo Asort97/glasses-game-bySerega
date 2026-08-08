@@ -58,6 +58,20 @@ public class LensMinigameManager : MonoBehaviour
     private Quaternion       _gameCameraStartLocalRotation;
     private bool             _hasGameCameraStart;
 
+    public bool IsPlayingGameStart =>
+        enabled &&
+        !_paused &&
+        _current != null &&
+        IsStartMinigame(_current) &&
+        _current.gameObject.activeInHierarchy;
+
+    public bool IsPlayingRegularMinigame =>
+        enabled &&
+        !_paused &&
+        _current != null &&
+        !IsStartMinigame(_current) &&
+        _current.gameObject.activeInHierarchy;
+
     private void Awake()
     {
         CacheGameCameraStart();

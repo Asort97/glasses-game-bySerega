@@ -18,6 +18,7 @@ Shader "Custom/CRT Scanline Lens"
         _CRTPowerOffProgress("CRT Power Off Progress", Range(0, 1)) = 0
 
         [Toggle] _FlickerBandingEnabled("Flicker Banding Enabled", Float) = 0
+        [Toggle] _FlickerBandsOnlyEnabled("Flicker Bands Only", Float) = 0
         _FlickerBandingStrength("Flicker Banding Strength", Range(0, 1)) = 0.35
         _FlickerBandColor("Flicker Band Color", Color) = (0, 0, 0, 1)
         _FlickerBandCount("Flicker Band Count", Range(1, 12)) = 3
@@ -25,6 +26,7 @@ Shader "Custom/CRT Scanline Lens"
         _FlickerBandSoftness("Flicker Band Softness", Range(0.001, 0.5)) = 0.08
         _FlickerBandSpeed("Flicker Band Speed", Range(-3, 3)) = 0.5
         _FlickerBandTilt("Rolling Shutter Tilt", Range(-1, 1)) = 0
+        _FlickerBandHorizontalDistortion("Flicker Band Horizontal Distortion", Range(0, 0.15)) = 0.04
 
         _ChromaKeyColor("Chroma Key Color", Color) = (1, 0, 1, 1)
         _ChromaKeyTolerance("Chroma Key Tolerance", Range(0, 1)) = 0.18
@@ -88,6 +90,7 @@ Shader "Custom/CRT Scanline Lens"
                 half _CRTPowerOffEnabled;
                 half _CRTPowerOffProgress;
                 half _FlickerBandingEnabled;
+                half _FlickerBandsOnlyEnabled;
                 half _FlickerBandingStrength;
                 half4 _FlickerBandColor;
                 half _FlickerBandCount;
@@ -95,6 +98,7 @@ Shader "Custom/CRT Scanline Lens"
                 half _FlickerBandSoftness;
                 half _FlickerBandSpeed;
                 half _FlickerBandTilt;
+                half _FlickerBandHorizontalDistortion;
                 half4 _ChromaKeyColor;
                 half _ChromaKeyTolerance;
                 half4 _ScreenTint;
@@ -218,6 +222,34 @@ Shader "Custom/CRT Scanline Lens"
                 return color;
             }
 
+            half GetFlickerBandMask(float2 uv)
+            {
+                float phase = frac(
+                    uv.y * max(_FlickerBandCount, 1.0h)
+                    + uv.x * _FlickerBandTilt
+                    - _Time.y * _FlickerBandSpeed);
+
+                float centerDistance = abs(phase - 0.5) * 2.0;
+                return 1.0h - smoothstep(
+                    _FlickerBandWidth,
+                    min(1.0h, _FlickerBandWidth + _FlickerBandSoftness),
+                    centerDistance);
+            }
+
+            float2 ApplyFlickerBandDistortion(float2 sampleUv, float2 bandUv)
+            {
+                half strength = saturate(_FlickerBandingStrength)
+                    * step(0.5h, _FlickerBandingEnabled);
+
+                if (strength <= 0.0001h)
+                    return sampleUv;
+
+                half band = GetFlickerBandMask(bandUv);
+                half shift = band * strength * _FlickerBandHorizontalDistortion;
+                sampleUv.x -= shift;
+                return saturate(sampleUv);
+            }
+
             half3 ApplyFlickerBanding(float2 uv, half3 color)
             {
                 half strength = saturate(_FlickerBandingStrength)
@@ -226,16 +258,9 @@ Shader "Custom/CRT Scanline Lens"
                 if (strength <= 0.0001h)
                     return color;
 
-                float phase = frac(
-                    uv.y * max(_FlickerBandCount, 1.0h)
-                    + uv.x * _FlickerBandTilt
-                    - _Time.y * _FlickerBandSpeed);
-
-                float centerDistance = abs(phase - 0.5) * 2.0;
-                half band = 1.0h - smoothstep(
-                    _FlickerBandWidth,
-                    min(1.0h, _FlickerBandWidth + _FlickerBandSoftness),
-                    centerDistance);
+                half band = GetFlickerBandMask(uv);
+                half bandsOnly = step(0.5h, _FlickerBandsOnlyEnabled);
+                color = lerp(color, color * band, bandsOnly);
 
                 half blend = band * strength * _FlickerBandColor.a;
                 return lerp(color, _FlickerBandColor.rgb, blend);
@@ -332,7 +357,8 @@ Shader "Custom/CRT Scanline Lens"
                     return half4(0.0, 0.0, 0.0, 1.0);
                 }
 
-                float2 uv = GetCrtPowerOffSampleUv(displayUv);
+                float2 bandUv = GetCrtPowerOffSampleUv(displayUv);
+                float2 uv = ApplyFlickerBandDistortion(bandUv, bandUv);
                 half4 baseColor = SampleBase(uv);
                 half3 color = strength <= 0.0001h ? baseColor.rgb : SampleRgbSplit(uv, strength);
                 color = ApplyHorizontalBleed(uv, color, strength);
@@ -343,7 +369,7 @@ Shader "Custom/CRT Scanline Lens"
                 half vignette = saturate(1.0h - dot(centered, centered) * _VignetteStrength * strength);
                 color *= vignette;
                 color = ApplyTVNoise(uv, color);
-                color = ApplyFlickerBanding(uv, color);
+                color = ApplyFlickerBanding(bandUv, color);
                 color = ApplyCrtPowerOff(displayUv, color);
 
                 return half4(saturate(color), baseColor.a);

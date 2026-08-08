@@ -90,6 +90,8 @@ Material:
     - _BlendModePreserveSpecular: 1
     - _BlendOp: 0
     - _BumpScale: 1
+    - _CRTPowerOffEnabled: 0
+    - _CRTPowerOffProgress: 0
     - _CRTStrength: 0
     - _ChromaKeyTolerance: 0.18
     - _ClearCoatMask: 0
@@ -106,7 +108,7 @@ Material:
     - _FlickerBandSoftness: 0.5
     - _FlickerBandSpeed: 3
     - _FlickerBandTilt: 0
-    - _FlickerBandWidth: 0.488
+    - _FlickerBandWidth: 0.361
     - _FlickerBandingEnabled: 0
     - _FlickerBandingStrength: 1
     - _GlossMapScale: 0
