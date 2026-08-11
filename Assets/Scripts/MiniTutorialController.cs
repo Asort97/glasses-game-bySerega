@@ -45,19 +45,35 @@ public class MiniTutorialController : MonoBehaviour
     private Coroutine _animationRoutine;
     private Vector2 _primaryStartPosition;
     private Vector2 _spaceStartPosition;
+    private bool _initialized;
 
     private void Awake()
     {
+        EnsureInitialized();
+        Hide();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized)
+            return;
+
         if (primaryImage != null)
             _primaryStartPosition = primaryImage.rectTransform.anchoredPosition;
         if (spaceImage != null)
             _spaceStartPosition = spaceImage.rectTransform.anchoredPosition;
 
-        Hide();
+        _initialized = true;
     }
 
     public void Show(MiniTutorialType type)
     {
+        Show(type, frameInterval);
+    }
+
+    public void Show(MiniTutorialType type, float customFrameInterval)
+    {
+        EnsureInitialized();
         Hide();
 
         if (type == MiniTutorialType.None)
@@ -76,11 +92,13 @@ public class MiniTutorialController : MonoBehaviour
                 type == MiniTutorialType.KeyboardSpaceOnly ? spaceOnlyPosition : _spaceStartPosition;
         }
 
-        _animationRoutine = StartCoroutine(Animate(type));
+        _animationRoutine = StartCoroutine(Animate(type, customFrameInterval));
     }
 
     public void Hide()
     {
+        EnsureInitialized();
+
         if (_animationRoutine != null)
         {
             StopCoroutine(_animationRoutine);
@@ -101,8 +119,9 @@ public class MiniTutorialController : MonoBehaviour
 
     }
 
-    private IEnumerator Animate(MiniTutorialType type)
+    private IEnumerator Animate(MiniTutorialType type, float customFrameInterval)
     {
+        float interval = Mathf.Max(0.05f, customFrameInterval);
         Sprite[] frames = GetPrimaryFrames(type);
         bool usesSpace = UsesSpace(type);
         bool usesMouse = UsesMouse(type);
@@ -144,7 +163,7 @@ public class MiniTutorialController : MonoBehaviour
                     _primaryStartPosition + Vector2.right * offset;
             }
 
-            yield return new WaitForSecondsRealtime(frameInterval);
+            yield return new WaitForSecondsRealtime(interval);
         }
     }
 

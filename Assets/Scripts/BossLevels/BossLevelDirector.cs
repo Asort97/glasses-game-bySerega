@@ -157,7 +157,11 @@ public class BossLevelDirector : MonoBehaviour
             yield return new WaitForSeconds(boss.BlankBeforeBossDuration);
 
         if (_activeBoss == boss)
+        {
+            leftHealth.HideHearts();
+            rightHealth.HideHearts();
             boss.StartBoss();
+        }
 
         _startRoutine = null;
     }

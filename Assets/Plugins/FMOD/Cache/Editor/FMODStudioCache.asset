@@ -121,10 +121,10 @@ MonoBehaviour:
   Path: FMODProject/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639177651172874752
+  lastModified: 639220853838996249
   FileSizes:
   - Name: Desktop
-    Value: 1186
+    Value: 1220
   Exists: 1
 --- !u!114 &11400000
 MonoBehaviour:
@@ -152,12 +152,13 @@ MonoBehaviour:
   - {fileID: 3151893499566047311}
   - {fileID: 1172548047749908962}
   - {fileID: 6958447243486041505}
+  - {fileID: 3964083647998637056}
   EditorParameters: []
   MasterBanks:
   - {fileID: 8682615882424646026}
   StringsBanks:
   - {fileID: -1008069695828200700}
-  cacheTime: 639177651172874752
+  cacheTime: 639220853838996249
   cacheVersion: 131636
 --- !u!114 &1079592413344827980
 MonoBehaviour:
@@ -265,6 +266,34 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
+--- !u!114 &3964083647998637056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Game/Eye
+  m_EditorClassIdentifier: 
+  Path: event:/Game/Eye
+  Guid:
+    Data1: 1861313549
+    Data2: 1324692470
+    Data3: -837200721
+    Data4: -332871298
+  Banks:
+  - {fileID: 8682615882424646026}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 6676449075396123253}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &4956183682908111495
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -292,6 +321,30 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 780
+--- !u!114 &6676449075396123253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Eye/TV_Pan
+  m_EditorClassIdentifier: 
+  Name: TV_Pan
+  StudioPath: 
+  Min: -1
+  Max: 1
+  Default: 0
+  ID:
+    data1: 2031898639
+    data2: 3389922732
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &6958447243486041505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -361,10 +414,10 @@ MonoBehaviour:
   Path: FMODProject/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639177651172847909
+  lastModified: 639220853838950501
   FileSizes:
   - Name: Desktop
-    Value: 1347744
+    Value: 1401856
   Exists: 1
 --- !u!114 &8728895055853469028
 MonoBehaviour:

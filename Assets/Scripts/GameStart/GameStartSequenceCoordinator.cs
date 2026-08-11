@@ -10,6 +10,7 @@ public class GameStartSequenceCoordinator : MonoBehaviour
     [SerializeField] private int requiredActivations = 2;
 
     [Header("Post Start Cutscene")]
+    [SerializeField] private PostGameStartTutorialSequence postStartTutorial;
     [SerializeField] private SynchronizedLensCutscene postStartCutscene;
 
     [Header("Menu")]
@@ -55,6 +56,9 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         if (postStartCutscene != null)
             postStartCutscene.StopAndHide();
 
+        if (postStartTutorial != null)
+            postStartTutorial.StopAndHide();
+
         PrepareInitialState();
     }
 
@@ -98,7 +102,10 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         AccelerateSequence();
         yield return WaitSequence(startDelayAfterReady);
 
-        HideGameStartsForCutscene();
+        HideGameStartsForPostStartSequence();
+
+        if (postStartTutorial != null)
+            yield return postStartTutorial.Play();
 
         if (postStartCutscene != null)
             yield return postStartCutscene.Play();
@@ -190,7 +197,7 @@ public class GameStartSequenceCoordinator : MonoBehaviour
         }
     }
 
-    private void HideGameStartsForCutscene()
+    private void HideGameStartsForPostStartSequence()
     {
         foreach (GameStartMinigame gameStart in GetKnownGameStarts())
         {

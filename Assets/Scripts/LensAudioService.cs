@@ -14,7 +14,9 @@ public class LensAudioService : MonoBehaviour
     [SerializeField] private EventReference gameStart;
     [SerializeField] private EventReference menuTheme;
     [SerializeField] private EventReference click;
+    [SerializeField] private EventReference eye;
     private EventInstance _musicInstance;
+    private EventInstance _eyeInstance;
 
     public static LensAudioService Instance;
 
@@ -74,6 +76,26 @@ public class LensAudioService : MonoBehaviour
         instance.release();
     }
 
+    public void PlayEye()
+    {
+        StopEye();
+        if (eye.IsNull)
+            return;
+
+        _eyeInstance = RuntimeManager.CreateInstance(eye);
+        _eyeInstance.start();
+    }
+
+    public void StopEye()
+    {
+        if (!_eyeInstance.isValid())
+            return;
+
+        _eyeInstance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+        _eyeInstance.release();
+        _eyeInstance = default;
+    }
+
     public void PlayHeartFinish()
     {
         PlayOneShot(heartClickingFinish);    
@@ -108,6 +130,7 @@ public class LensAudioService : MonoBehaviour
 
     private void OnDestroy()
     {
+        StopEye();
         StopMusic();
 
         if (Instance == this)

@@ -195,6 +195,11 @@ public class LensHealthSystem : MonoBehaviour
 
     public void RestoreHeartsAfterBoss()
     {
+        HideHearts();
+    }
+
+    public void HideHearts()
+    {
         if (heartsView != null)
             heartsView.Hide();
     }

@@ -28,7 +28,8 @@ MonoBehaviour:
   - {fileID: 7833122117494664109}
   - {fileID: 8911001305281039425}
   - {fileID: 6611729570168491222}
-  m_RendererFeatureMap: 9471feffffffffffd6ccd67c0395c15b
+  - {fileID: 5411277947725042789}
+  m_RendererFeatureMap: ad6b866f10d7b46c418c5182793caa7bd6ccd67c0395c15b65540e8f9fb8184b
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -54,6 +55,37 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &5411277947725042789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b801e4252c06934e95e7d806727c0e4, type: 3}
+  m_Name: Lens Focus Blur
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  settings:
+    shader: {fileID: 4800000, guid: d5ef5cbb2d3de464994916a33753ac86, type: 3}
+    renderPassEvent: 600
+    leftLensEnabled: 1
+    rightLensEnabled: 0
+    leftLensLayer:
+      serializedVersion: 2
+      m_Bits: 2048
+    rightLensLayer:
+      serializedVersion: 2
+      m_Bits: 4096
+    intensity: 1
+    blurStrength: 7.85
+    iterations: 3
+    downsample: 2
+    edgeSoftness: 0
+    radialGradientRadius: 41.6
+    radialGradientPower: 1.28
 --- !u!114 &6611729570168491222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70,8 +102,8 @@ MonoBehaviour:
   settings:
     renderPassEvent: 600
     leftAmount: 0
-    rightAmount: 0.6
-    edgeSoftness: 0.36
+    rightAmount: 0.227
+    edgeSoftness: 0.001
     edgeRoughness: 0.28
     intensity: 1
     noiseScale: 5
