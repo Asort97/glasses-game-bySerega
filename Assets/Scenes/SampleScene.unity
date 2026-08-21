@@ -2215,14 +2215,14 @@ Canvas:
   serializedVersion: 3
   m_RenderMode: 1
   m_Camera: {fileID: 330585545}
-  m_PlaneDistance: 10
+  m_PlaneDistance: 5
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 1
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -2240,6 +2240,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1648386074}
+  - {fileID: 960290345}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2859,9 +2860,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
+  m_Maskable: 0
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -4046,7 +4047,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3196138216412401344, guid: e43612c2f7ed0c64283d7ca1270ffca2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -0.000008537736
+      value: -0.00000856258
       objectReference: {fileID: 0}
     - target: {fileID: 3196138216412401344, guid: e43612c2f7ed0c64283d7ca1270ffca2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -5625,6 +5626,27 @@ MonoBehaviour:
       Data3: -837200721
       Data4: -332871298
     Path: event:/Game/Eye
+  cantCloseDebuff:
+    Guid:
+      Data1: 223025286
+      Data2: 1214225345
+      Data3: -1769186663
+      Data4: 1618058041
+    Path: event:/Game/CantClose
+  closeDebuff:
+    Guid:
+      Data1: -1599510420
+      Data2: 1132468094
+      Data3: 237861774
+      Data4: -388677011
+    Path: event:/Game/CloseDebuff
+  loadingDebuff:
+    Guid:
+      Data1: 1658739225
+      Data2: 1236069367
+      Data3: -1830062158
+      Data4: -1110816831
+    Path: event:/Game/Loading
 --- !u!114 &820713229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6928,6 +6950,118 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &960290344
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 960290345}
+  - component: {fileID: 960290346}
+  m_Layer: 0
+  m_Name: DebuffWindows
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &960290345
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960290344}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 249069558}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &960290346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960290344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1db05a865ecb9b8449658c04ffe05505, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  windowPrefab: {fileID: 8709224605621804949, guid: de8d7d6496c5a7943805517645635b73, type: 3}
+  windowParent: {fileID: 960290345}
+  gameplayManagers:
+  - {fileID: 103783122}
+  - {fileID: 2127787416}
+  canvasCursor: {fileID: 1164621771}
+  audioService: {fileID: 820713227}
+  spawnInterval: 10
+  closeTime: 5
+  maxConcurrentWindows: 3
+  spawnOnStart: 1
+  screenPadding: 20
+  placementAttempts: 12
+  definitions:
+  - id: 0
+    title: Speed UP
+    randomSpawnEnabled: 0
+    canBeCancelled: 0
+    randomWeight: 1
+  - id: 1
+    title: Combo UP
+    randomSpawnEnabled: 0
+    canBeCancelled: 0
+    randomWeight: 1
+  - id: 2
+    title: Vision PRO
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
+  - id: 3
+    title: New horizons
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
+  - id: 4
+    title: More upgrades
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
+  - id: 5
+    title: Ambidextrous update
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
+  - id: 6
+    title: Heart remake
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
+  - id: 7
+    title: NightMode
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
+  - id: 8
+    title: Skill tester
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
+  - id: 9
+    title: Retrospective
+    randomSpawnEnabled: 1
+    canBeCancelled: 1
+    randomWeight: 1
 --- !u!1 &969638694
 GameObject:
   m_ObjectHideFlags: 0

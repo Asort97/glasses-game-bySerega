@@ -1,5 +1,6 @@
 using FMODUnity;
 using FMOD.Studio;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class LensAudioService : MonoBehaviour
@@ -15,8 +16,13 @@ public class LensAudioService : MonoBehaviour
     [SerializeField] private EventReference menuTheme;
     [SerializeField] private EventReference click;
     [SerializeField] private EventReference eye;
+    [SerializeField] private EventReference cantCloseDebuff;
+    [SerializeField] private EventReference closeDebuff;
+    [SerializeField] private EventReference loadingDebuff;
     private EventInstance _musicInstance;
     private EventInstance _eyeInstance;
+    private readonly Dictionary<int, EventInstance> _debuffLoadingInstances = new Dictionary<int, EventInstance>();
+    private int _nextDebuffLoadingId;
 
     public static LensAudioService Instance;
 
@@ -101,6 +107,38 @@ public class LensAudioService : MonoBehaviour
         PlayOneShot(heartClickingFinish);    
     }
 
+    public void PlayCloseDebuff()
+    {
+        PlayOneShot(closeDebuff);
+    }
+
+    public int StartDebuffLoading()
+    {
+        if (loadingDebuff.IsNull)
+            return -1;
+
+        EventInstance instance = RuntimeManager.CreateInstance(loadingDebuff);
+        instance.start();
+
+        int id = _nextDebuffLoadingId++;
+        _debuffLoadingInstances.Add(id, instance);
+        return id;
+    }
+
+    public void StopDebuffLoading(int id)
+    {
+        if (!_debuffLoadingInstances.TryGetValue(id, out EventInstance instance))
+            return;
+
+        if (instance.isValid())
+        {
+            instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            instance.release();
+        }
+
+        _debuffLoadingInstances.Remove(id);
+    }
+
     private void PlayOneShot(EventReference eventReference)
     {
         if (eventReference.IsNull)
@@ -130,10 +168,25 @@ public class LensAudioService : MonoBehaviour
 
     private void OnDestroy()
     {
+        StopAllDebuffLoading();
         StopEye();
         StopMusic();
 
         if (Instance == this)
             Instance = null;
+    }
+
+    private void StopAllDebuffLoading()
+    {
+        foreach (EventInstance instance in _debuffLoadingInstances.Values)
+        {
+            if (!instance.isValid())
+                continue;
+
+            instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            instance.release();
+        }
+
+        _debuffLoadingInstances.Clear();
     }
 }

@@ -52,6 +52,30 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
+--- !u!114 &-8578858982651884158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/CantClose/TV_Pan
+  m_EditorClassIdentifier: 
+  Name: TV_Pan
+  StudioPath: 
+  Min: -1
+  Max: 1
+  Default: 0
+  ID:
+    data1: 2031898639
+    data2: 3389922732
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &-8017707079821396202
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79,6 +103,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
+--- !u!114 &-5457838687280885011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Game/Loading
+  m_EditorClassIdentifier: 
+  Path: event:/Game/Loading
+  Guid:
+    Data1: 1658739225
+    Data2: 1236069367
+    Data3: -1830062158
+    Data4: -1110816831
+  Banks:
+  - {fileID: 8682615882424646026}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 14680
 --- !u!114 &-2667898238737781101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106,6 +157,58 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 417
+--- !u!114 &-1762753525752202769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/CloseDebuff/TV_Pan
+  m_EditorClassIdentifier: 
+  Name: TV_Pan
+  StudioPath: 
+  Min: -1
+  Max: 1
+  Default: 0
+  ID:
+    data1: 2031898639
+    data2: 3389922732
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-1733395527166795672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Game/CantClose
+  m_EditorClassIdentifier: 
+  Path: event:/Game/CantClose
+  Guid:
+    Data1: 223025286
+    Data2: 1214225345
+    Data3: -1769186663
+    Data4: 1618058041
+  Banks:
+  - {fileID: 8682615882424646026}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: -8578858982651884158}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &-1008069695828200700
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,10 +224,10 @@ MonoBehaviour:
   Path: FMODProject/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639220853838996249
+  lastModified: 639229519109658881
   FileSizes:
   - Name: Desktop
-    Value: 1220
+    Value: 1372
   Exists: 1
 --- !u!114 &11400000
 MonoBehaviour:
@@ -153,12 +256,15 @@ MonoBehaviour:
   - {fileID: 1172548047749908962}
   - {fileID: 6958447243486041505}
   - {fileID: 3964083647998637056}
+  - {fileID: -5457838687280885011}
+  - {fileID: 8672170649803868387}
+  - {fileID: -1733395527166795672}
   EditorParameters: []
   MasterBanks:
   - {fileID: 8682615882424646026}
   StringsBanks:
   - {fileID: -1008069695828200700}
-  cacheTime: 639220853838996249
+  cacheTime: 639229519109658881
   cacheVersion: 131636
 --- !u!114 &1079592413344827980
 MonoBehaviour:
@@ -399,6 +505,34 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 66925
+--- !u!114 &8672170649803868387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Game/CloseDebuff
+  m_EditorClassIdentifier: 
+  Path: event:/Game/CloseDebuff
+  Guid:
+    Data1: -1599510420
+    Data2: 1132468094
+    Data3: 237861774
+    Data4: -388677011
+  Banks:
+  - {fileID: 8682615882424646026}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: -1762753525752202769}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &8682615882424646026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -414,10 +548,10 @@ MonoBehaviour:
   Path: FMODProject/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639220853838950501
+  lastModified: 639229519109626961
   FileSizes:
   - Name: Desktop
-    Value: 1401856
+    Value: 1596736
   Exists: 1
 --- !u!114 &8728895055853469028
 MonoBehaviour:

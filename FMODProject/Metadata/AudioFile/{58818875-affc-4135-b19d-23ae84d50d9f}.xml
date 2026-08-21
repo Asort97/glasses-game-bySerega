@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{58818875-affc-4135-b19d-23ae84d50d9f}">
+		<property name="assetPath">
+			<value>LoadingSFX.mp3</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>14.680816326530612</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{eb8e66af-af0f-4da5-bd89-eb71869f5d3c}</destination>
+		</relationship>
+	</object>
+</objects>

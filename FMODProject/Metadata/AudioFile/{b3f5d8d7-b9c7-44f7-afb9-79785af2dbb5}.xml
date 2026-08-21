@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{b3f5d8d7-b9c7-44f7-afb9-79785af2dbb5}">
+		<property name="assetPath">
+			<value>ClosedSFX.mp3</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>1.6718367346938776</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{eb8e66af-af0f-4da5-bd89-eb71869f5d3c}</destination>
+		</relationship>
+	</object>
+</objects>

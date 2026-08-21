@@ -119,11 +119,14 @@ public class BossLevelDirector : MonoBehaviour
         leftManager.HideBossWaitingPreview();
         rightManager.HideBossWaitingPreview();
 
+        leftHealth.ShowSingleHeartForBoss();
+        rightHealth.ShowSingleHeartForBoss();
+
         if (heartsHideDelay > 0f)
             yield return new WaitForSeconds(heartsHideDelay);
 
-        leftHealth.ShowSingleHeartForBoss();
-        rightHealth.ShowSingleHeartForBoss();
+        leftHealth.HideHearts();
+        rightHealth.HideHearts();
 
         if (_activeBoss == boss)
             yield return StartBossRoutine(boss);

@@ -16,11 +16,25 @@ public class CanvasCursor : MonoBehaviour
 
     private bool _isOverRightLens;
     private bool _appearanceInitialized;
+    private bool _spriteVisible = true;
+    private bool _uiInteractionOverride;
+
+    private void Awake()
+    {
+        if (cursorImage != null)
+            _spriteVisible = cursorImage.enabled;
+    }
 
     public void SetCursorSpriteVisible(bool visible)
     {
-        if (cursorImage != null)
-            cursorImage.enabled = visible;
+        _spriteVisible = visible;
+        ApplyCursorVisibility();
+    }
+
+    public void SetUiInteractionOverride(bool active)
+    {
+        _uiInteractionOverride = active;
+        ApplyCursorVisibility();
     }
 
     private void OnEnable()
@@ -74,5 +88,11 @@ public class CanvasCursor : MonoBehaviour
         _isOverRightLens = isOverRightLens;
         cursorImage.sprite = _isOverRightLens ? rightLensCursor : defaultCursor;
         cursorImage.color = _isOverRightLens ? rightLensColor : defaultCursorColor;
+    }
+
+    private void ApplyCursorVisibility()
+    {
+        if (cursorImage != null)
+            cursorImage.enabled = _spriteVisible || _uiInteractionOverride;
     }
 }
