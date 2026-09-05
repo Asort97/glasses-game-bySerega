@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public enum MiniTutorialType
@@ -39,7 +40,9 @@ public class MiniTutorialController : MonoBehaviour
 
     [Header("Animation")]
     [SerializeField, Min(0.05f)] private float frameInterval = 0.3f;
-    [SerializeField, Min(0f)] private float mouseMoveDistance = 35f;
+    [FormerlySerializedAs("mouseMoveDistance")]
+    [SerializeField, Min(0f)] private float mouseOrbitRadius = 35f;
+    [SerializeField, Min(0.1f)] private float mouseOrbitDuration = 2f;
     [SerializeField] private Vector2 spaceOnlyPosition = new Vector2(115f, -33f);
 
     private Coroutine _animationRoutine;
@@ -68,7 +71,7 @@ public class MiniTutorialController : MonoBehaviour
 
     public void Show(MiniTutorialType type)
     {
-        Show(type, frameInterval);
+        Show(type, frameInterval * 2f);
     }
 
     public void Show(MiniTutorialType type, float customFrameInterval)
@@ -122,13 +125,18 @@ public class MiniTutorialController : MonoBehaviour
     private IEnumerator Animate(MiniTutorialType type, float customFrameInterval)
     {
         float interval = Mathf.Max(0.05f, customFrameInterval);
+        float spaceInterval = interval * 0.5f;
         Sprite[] frames = GetPrimaryFrames(type);
         bool usesSpace = UsesSpace(type);
         bool usesMouse = UsesMouse(type);
         bool movesMouse = UsesMouseMovement(type);
         bool blinksMouse = UsesMouseClick(type);
         int frameIndex = 0;
-        bool blinkState = false;
+        bool primaryBlinkState = false;
+        bool spaceBlinkState = false;
+        float primaryElapsed = interval;
+        float spaceElapsed = spaceInterval;
+        float orbitElapsed = 0f;
 
         if (spaceImage != null)
         {
@@ -138,32 +146,50 @@ public class MiniTutorialController : MonoBehaviour
 
         while (true)
         {
-            if (frames.Length > 0)
-            {
-                primaryImage.sprite = frames[frameIndex];
-                frameIndex = (frameIndex + 1) % frames.Length;
-            }
-
-            blinkState = !blinkState;
-
-            if (usesSpace && spaceImage != null)
-                spaceImage.sprite = blinkState ? spaceBlink : space;
-
-            if (usesMouse)
-            {
-                Sprite normalSprite = movesMouse && mouseMoving != null ? mouseMoving : mouse;
-                Sprite clickSprite = movesMouse && mouseMovingClick != null ? mouseMovingClick : mouseBlink;
-                primaryImage.sprite = blinksMouse && blinkState ? clickSprite : normalSprite;
-            }
+            float deltaTime = Time.unscaledDeltaTime;
+            primaryElapsed += deltaTime;
+            spaceElapsed += deltaTime;
 
             if (movesMouse)
             {
-                float offset = blinkState ? mouseMoveDistance : -mouseMoveDistance;
-                primaryImage.rectTransform.anchoredPosition =
-                    _primaryStartPosition + Vector2.right * offset;
+                orbitElapsed += deltaTime;
+                float angle = orbitElapsed / Mathf.Max(0.1f, mouseOrbitDuration) * Mathf.PI * 2f;
+                Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * mouseOrbitRadius;
+                primaryImage.rectTransform.anchoredPosition = _primaryStartPosition + offset;
             }
 
-            yield return new WaitForSecondsRealtime(interval);
+            if (primaryElapsed >= interval)
+            {
+                primaryElapsed %= interval;
+
+                if (frames.Length > 0)
+                {
+                    primaryImage.sprite = frames[frameIndex];
+                    frameIndex = (frameIndex + 1) % frames.Length;
+                }
+
+                primaryBlinkState = !primaryBlinkState;
+
+                if (usesMouse)
+                {
+                    Sprite normalSprite = movesMouse && mouseMoving != null ? mouseMoving : mouse;
+                    Sprite clickSprite = movesMouse && mouseMovingClick != null ? mouseMovingClick : mouseBlink;
+                    primaryImage.sprite = blinksMouse && primaryBlinkState ? clickSprite : normalSprite;
+                }
+            }
+
+            if (spaceElapsed >= spaceInterval)
+            {
+                spaceElapsed %= spaceInterval;
+
+                if (usesSpace && spaceImage != null)
+                {
+                    spaceBlinkState = !spaceBlinkState;
+                    spaceImage.sprite = spaceBlinkState ? spaceBlink : space;
+                }
+            }
+
+            yield return null;
         }
     }
 

@@ -70,6 +70,7 @@ public class DoodlerBossLevel : BossLevelBase
     {
         _platformsCleared = 0;
         platformSystem.OnNewPlatformLanded += HandlePlatformLanded;
+        platformSystem.OnDoodlerFell += HandleDoodlerFell;
         HidePreview();
         HideNamePreview();
         leftBossRoot.SetActive(true);
@@ -81,6 +82,7 @@ public class DoodlerBossLevel : BossLevelBase
     public override void StopBoss()
     {
         platformSystem.OnNewPlatformLanded -= HandlePlatformLanded;
+        platformSystem.OnDoodlerFell -= HandleDoodlerFell;
         HidePreview();
         HideNamePreview();
         leftBossRoot.SetActive(false);
@@ -93,6 +95,11 @@ public class DoodlerBossLevel : BossLevelBase
         _platformsCleared++;
         if (_platformsCleared >= platformsToWin)
             CompleteBoss();
+    }
+
+    private void HandleDoodlerFell()
+    {
+        FailBoss();
     }
 
     private void SetPreviewAnimatorsEnabled(bool enabled)

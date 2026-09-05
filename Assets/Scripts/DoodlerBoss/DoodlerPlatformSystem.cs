@@ -4,6 +4,7 @@ using UnityEngine;
 public class DoodlerPlatformSystem : MonoBehaviour
 {
     public event System.Action<DoodlerPlatform> OnNewPlatformLanded;
+    public event System.Action OnDoodlerFell;
 
     [Header("References")]
     [SerializeField] private GameObject platformTemplate;
@@ -11,7 +12,6 @@ public class DoodlerPlatformSystem : MonoBehaviour
     [SerializeField] private Camera gameCamera;
     [SerializeField] private GameObject leftWallTemplate;
     [SerializeField] private GameObject rightWallTemplate;
-    [SerializeField] private LensHealthSystem rightLensHealth;
 
     [Header("Platforms")]
     [SerializeField] private float startHeight = -1.16f;
@@ -121,7 +121,7 @@ public class DoodlerPlatformSystem : MonoBehaviour
             return false;
 
         _fallHandled = true;
-        rightLensHealth.OnLose();
+        OnDoodlerFell?.Invoke();
         return true;
     }
 

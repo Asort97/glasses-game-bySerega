@@ -24,6 +24,18 @@ public class LensGameOverController : MonoBehaviour
 
     }
 
+    private void OnEnable()
+    {
+        if (bossLevelDirector != null)
+            bossLevelDirector.BossFailed += TriggerGameOver;
+    }
+
+    private void OnDisable()
+    {
+        if (bossLevelDirector != null)
+            bossLevelDirector.BossFailed -= TriggerGameOver;
+    }
+
     public void NotifyLensBroken(LensHealthSystem lens)
     {
         if (_gameOver)

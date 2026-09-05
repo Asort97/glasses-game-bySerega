@@ -11,6 +11,7 @@ public class FruitNinjaMinigame : MinigameBase
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Camera rightGameCamera;
     [SerializeField] private Transform lensTransform;
+    [SerializeField] private Shader sliceShader;
 
     [Header("Rules")]
     [SerializeField] private float spawnIntervalMin = 0.65f;
@@ -185,17 +186,13 @@ public class FruitNinjaMinigame : MinigameBase
         if (_circleSprite == null)
             CreateCircleSprite();
 
-        if (_sliceMaterialTemplate == null)
+        if (_sliceMaterialTemplate == null && sliceShader != null)
         {
-            Shader shader = Shader.Find("Custom/FruitSliceClip");
-            if (shader != null)
+            _sliceMaterialTemplate = new Material(sliceShader)
             {
-                _sliceMaterialTemplate = new Material(shader)
-                {
-                    name = "FruitSliceClip_Runtime",
-                    hideFlags = HideFlags.HideAndDontSave
-                };
-            }
+                name = "FruitSliceClip_Runtime",
+                hideFlags = HideFlags.HideAndDontSave
+            };
         }
     }
 
@@ -345,9 +342,10 @@ public class FruitNinjaMinigame : MinigameBase
         Vector2 screenSegment = currentScreen - _previousScreenPoint;
         float screenDistance = screenSegment.magnitude;
         float screenSpeed = dt > 0f ? screenDistance / dt : 0f;
-        bool fastEnough = distance >= minSliceDistance
+        float distanceScale = Mathf.Clamp(dt * 60f, 0.1f, 1f);
+        bool fastEnough = distance >= minSliceDistance * distanceScale
             && speed >= minSliceSpeed
-            && screenDistance >= minSliceScreenDistance
+            && screenDistance >= minSliceScreenDistance * distanceScale
             && screenSpeed >= minSliceScreenSpeed;
 
         if (fastEnough)

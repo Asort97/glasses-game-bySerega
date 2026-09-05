@@ -32,6 +32,7 @@ public class LensHealthSystem : MonoBehaviour
     private bool _broken;
     private bool _permanentlyBroken;
     private bool _gameOver;
+    private bool _tutorialRecovery;
     private float _recoveryTimer;
     private int _pressCount;
     private bool _phase2;
@@ -56,9 +57,22 @@ public class LensHealthSystem : MonoBehaviour
         if (_broken || _gameOver)
             return;
 
+        _tutorialRecovery = false;
         _hp = Mathf.Max(0, _hp - 1);
         _permanentlyBroken = _hp == 0;
         BreakLens();
+    }
+
+    public bool BeginTutorialRecovery()
+    {
+        if (_broken || _gameOver)
+            return false;
+
+        _tutorialRecovery = true;
+        _hp = Mathf.Max(0, _hp - 1);
+        _permanentlyBroken = _hp == 0;
+        BreakLens();
+        return true;
     }
 
     private void BreakLens()
@@ -67,17 +81,18 @@ public class LensHealthSystem : MonoBehaviour
         _pressCount = 0;
         _phase2 = false;
         _recoveryTimer = 0f;
-        SetOtherLensNoise(0f);
+        if (!_tutorialRecovery)
+            SetOtherLensNoise(0f);
 
         SetLensColor(_permanentlyBroken ? Color.black : Color.white);
         LensAudioService.Instance.PlayTVon(false, loseFromLeft ? -1f : 1f);
 
-        if (manager != null)
+        if (!_tutorialRecovery && manager != null)
             manager.SetPaused(true);
 
         RefreshHeartsUI();
 
-        if (gameOverController != null)
+        if (!_tutorialRecovery && gameOverController != null)
             gameOverController.NotifyLensBroken(this);
     }
 
@@ -86,14 +101,17 @@ public class LensHealthSystem : MonoBehaviour
         if (!_broken || _gameOver)
             return;
 
-        _recoveryTimer += Time.deltaTime;
-        SetOtherLensNoise(Mathf.Clamp01(_recoveryTimer / Mathf.Max(0.01f, recoveryDuration)));
-
-        if (_recoveryTimer >= recoveryDuration)
+        if (!_tutorialRecovery)
         {
-            if (gameOverController != null)
-                gameOverController.TriggerGameOver();
-            return;
+            _recoveryTimer += Time.deltaTime;
+            SetOtherLensNoise(Mathf.Clamp01(_recoveryTimer / Mathf.Max(0.01f, recoveryDuration)));
+
+            if (_recoveryTimer >= recoveryDuration)
+            {
+                if (gameOverController != null)
+                    gameOverController.TriggerGameOver();
+                return;
+            }
         }
 
         if (_permanentlyBroken)
@@ -130,19 +148,22 @@ public class LensHealthSystem : MonoBehaviour
         if (_permanentlyBroken)
             return;
 
+        bool tutorialRecovery = _tutorialRecovery;
         _broken = false;
+        _tutorialRecovery = false;
         _recoveryTimer = 0f;
-        SetOtherLensNoise(0f);
+        if (!tutorialRecovery)
+            SetOtherLensNoise(0f);
         SetLensColor(Color.white);
         LensAudioService.Instance.PlayTVon(true, loseFromLeft ? -1f : 1f);
 
         if (heartsView != null)
             heartsView.Hide();
 
-        if (manager != null)
+        if (!tutorialRecovery && manager != null)
             manager.SetPaused(false);
 
-        if (gameOverController != null)
+        if (!tutorialRecovery && gameOverController != null)
             gameOverController.NotifyLensRestored(this);
     }
 
@@ -150,6 +171,7 @@ public class LensHealthSystem : MonoBehaviour
     {
         _gameOver = true;
         _broken = true;
+        _tutorialRecovery = false;
         SetOtherLensNoise(0f);
         SetLensColor(Color.white);
 
@@ -174,6 +196,7 @@ public class LensHealthSystem : MonoBehaviour
         _broken = false;
         _permanentlyBroken = false;
         _gameOver = false;
+        _tutorialRecovery = false;
         _recoveryTimer = 0f;
         _pressCount = 0;
         _phase2 = false;

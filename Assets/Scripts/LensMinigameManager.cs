@@ -57,6 +57,8 @@ public class LensMinigameManager : MonoBehaviour
     private Vector3          _gameCameraStartLocalPosition;
     private Quaternion       _gameCameraStartLocalRotation;
     private bool             _hasGameCameraStart;
+    private bool             _tutorialVisible;
+    private MinigameBase     _tutorialTimerSource;
 
     public bool IsPlayingGameStart =>
         enabled &&
@@ -148,8 +150,10 @@ public class LensMinigameManager : MonoBehaviour
 
     private void Update()
     {
-        if (_current != null && !IsStartMinigame(_current) && timerFill != null)
-            timerFill.fillAmount = _current.Progress;
+        MinigameBase timerSource = _tutorialTimerSource != null ? _tutorialTimerSource : _current;
+
+        if (timerSource != null && !IsStartMinigame(timerSource) && timerFill != null)
+            timerFill.fillAmount = timerSource.Progress;
         else if (timerFill != null)
             timerFill.fillAmount = 0f;
     }
@@ -226,7 +230,6 @@ public class LensMinigameManager : MonoBehaviour
             yield return new WaitForSeconds(previewDuration);
 
             HidePreviewTitle();
-            HideTutorial();
 
             if (previewEndBlankDelay > 0f)
                 yield return new WaitForSeconds(previewEndBlankDelay);
@@ -288,7 +291,11 @@ public class LensMinigameManager : MonoBehaviour
 
     private void StartMinigame(MinigameBase next)
     {
-        HideTutorial();
+        _tutorialTimerSource = null;
+
+        if (!_tutorialVisible)
+            ShowTutorial(next.TutorialType);
+
         HideLossPresentation();
         ResetGameCamera();
         _pausedMinigame = null;
@@ -307,6 +314,7 @@ public class LensMinigameManager : MonoBehaviour
     {
         MinigameBase finished = _current;
         Detach(finished);
+        HideTutorial();
         bool showResult = !IsStartMinigame(finished);
         bool isRegularWin = !isLose && showResult;
 
@@ -418,6 +426,37 @@ public class LensMinigameManager : MonoBehaviour
 
         if (!_paused)
             QueueNext();
+    }
+
+    public IEnumerator PlayTutorialLossRecovery(MinigameBase tutorial)
+    {
+        HideTutorial();
+        HideTutorialMinigameTimer();
+        PlayResultSound(true);
+        ShowResultTitle(loseResultSprite);
+        yield return ShakeLoseResult(tutorial);
+        HidePreviewTitle();
+
+        if (health != null && health.BeginTutorialRecovery())
+        {
+            while (health.IsBroken)
+                yield return null;
+        }
+
+        if (tutorial != null)
+            tutorial.gameObject.SetActive(false);
+    }
+
+    public void ShowTutorialMinigameTimer(MinigameBase tutorial)
+    {
+        _tutorialTimerSource = tutorial;
+        SetTimerVisible(tutorial != null);
+    }
+
+    public void HideTutorialMinigameTimer()
+    {
+        _tutorialTimerSource = null;
+        SetTimerVisible(false);
     }
 
     private IEnumerator BlinkResultTitle()
@@ -641,13 +680,18 @@ public class LensMinigameManager : MonoBehaviour
     private void ShowTutorial(MiniTutorialType type)
     {
         if (tutorialController != null)
+        {
             tutorialController.Show(type);
+            _tutorialVisible = type != MiniTutorialType.None;
+        }
     }
 
     private void HideTutorial()
     {
         if (tutorialController != null)
             tutorialController.Hide();
+
+        _tutorialVisible = false;
     }
 
     private void HideLossPresentation()

@@ -10,6 +10,8 @@ public class RingsMinigame : MinigameBase
     private Ring[]    _rings;
     private int       _remaining;
     private bool      _ringsRunning;
+    private bool      _timeLimitEnabled = true;
+    private bool      _winEnabled = true;
     private float     _elapsed;
 
     // Игрок — объект с компонентом Player среди дочерних
@@ -51,7 +53,7 @@ public class RingsMinigame : MinigameBase
         foreach (var ring in _rings)
             ring.OnCollected += OnRingCollected;
 
-        if (_remaining == 0)
+        if (_remaining == 0 && _winEnabled)
         {
             _ringsRunning = false;
             RaiseWin();
@@ -68,9 +70,21 @@ public class RingsMinigame : MinigameBase
         }
     }
 
+    public void SetTimeLimitEnabled(bool enabled)
+    {
+        _timeLimitEnabled = enabled;
+        Progress = 1f;
+    }
+
+    public void SetWinEnabled(bool enabled)
+    {
+        _winEnabled = enabled;
+    }
+
     protected override void Update()
     {
         if (!_ringsRunning) return;
+        if (!_timeLimitEnabled) return;
 
         _elapsed += Time.deltaTime;
         Progress  = 1f - Mathf.Clamp01(_elapsed / surviveTime);
@@ -85,7 +99,7 @@ public class RingsMinigame : MinigameBase
     private void OnRingCollected()
     {
         _remaining--;
-        if (_remaining <= 0)
+        if (_remaining <= 0 && _winEnabled)
         {
             _ringsRunning = false;
             RaiseWin();

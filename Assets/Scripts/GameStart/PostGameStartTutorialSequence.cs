@@ -6,12 +6,21 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
     [Header("Tutorial Games")]
     [SerializeField] private RingsMinigame leftTutorial;
     [SerializeField] private TutorGameMinigame rightTutorial;
+    [SerializeField] private RingsMinigame leftRecoveryTutorial;
+    [SerializeField] private UnpressableButtonMinigame rightRecoveryTutorial;
+    [SerializeField] private LensMinigameManager leftMinigameManager;
+    [SerializeField] private LensMinigameManager rightMinigameManager;
     [SerializeField] private CanvasCursor canvasCursor;
     [SerializeField] private LensAudioService audioService;
 
     [Header("Mini Tutorials")]
     [SerializeField] private MiniTutorialController leftTutorialView;
     [SerializeField] private MiniTutorialController rightTutorialView;
+
+    [Header("Preview")]
+    [SerializeField] private SpriteRenderer leftPreviewTitle;
+    [SerializeField] private SpriteRenderer rightPreviewTitle;
+    [SerializeField] private Sprite rightPreviewPlaceholder;
 
     [Header("Right Tutorial States")]
     [SerializeField] private GameObject[] rightInputStates;
@@ -21,6 +30,8 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
     [Min(0f)] [SerializeField] private float delayBeforeLeftTutorial = 2f;
     [Min(0f)] [SerializeField] private float delayBeforeRightTutorial = 2f;
     [Min(0f)] [SerializeField] private float completedEyesDuration = 3f;
+    [Min(0f)] [SerializeField] private float previewDuration = 2f;
+    [Min(0f)] [SerializeField] private float previewEndBlankDelay = 0.2f;
     [Min(0.05f)] [SerializeField] private float miniTutorialFrameInterval = 0.6f;
 
     private MinigameBase _activeTutorial;
@@ -39,16 +50,30 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
         if (delayBeforeLeftTutorial > 0f)
             yield return new WaitForSeconds(delayBeforeLeftTutorial);
 
-        PlayMinigameSwitchSound();
+        yield return ShowPreview(
+            leftPreviewTitle,
+            leftTutorial != null ? leftTutorial.PreviewTitleSprite : null,
+            leftTutorialView,
+            leftTutorial != null ? leftTutorial.TutorialType : MiniTutorialType.None);
+
+        if (leftTutorial != null)
+            leftTutorial.SetTimeLimitEnabled(false);
         yield return PlayUntilWin(leftTutorial, leftTutorialView, true);
+        if (leftTutorial != null)
+            leftTutorial.SetTimeLimitEnabled(true);
 
         if (delayBeforeRightTutorial > 0f)
             yield return new WaitForSeconds(delayBeforeRightTutorial);
 
+        yield return ShowPreview(
+            rightPreviewTitle,
+            rightPreviewPlaceholder,
+            rightTutorialView,
+            rightTutorial != null ? rightTutorial.TutorialType : MiniTutorialType.None);
+
         SetActive(rightInputStates, true);
         SetActive(rightCompletedEyes, false);
         SetCursorVisible(true);
-        PlayMinigameSwitchSound();
         yield return PlayUntilWin(rightTutorial, rightTutorialView, false);
 
         SetCursorVisible(false);
@@ -64,6 +89,24 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
             audioService.StopEye();
         rightTutorial.gameObject.SetActive(false);
         SetActive(rightCompletedEyes, false);
+
+        yield return ShowPreview(
+            leftPreviewTitle,
+            leftRecoveryTutorial != null ? leftRecoveryTutorial.PreviewTitleSprite : null,
+            leftTutorialView,
+            leftRecoveryTutorial != null ? leftRecoveryTutorial.TutorialType : MiniTutorialType.None);
+
+        yield return PlayLeftRecoveryTutorial();
+
+        yield return ShowPreview(
+            rightPreviewTitle,
+            rightRecoveryTutorial != null ? rightRecoveryTutorial.PreviewTitleSprite : null,
+            rightTutorialView,
+            rightRecoveryTutorial != null ? rightRecoveryTutorial.TutorialType : MiniTutorialType.None);
+
+        SetCursorVisible(true);
+        yield return PlayRightRecoveryTutorial();
+        SetCursorVisible(false);
         yield return null;
     }
 
@@ -73,6 +116,7 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
 
         if (leftTutorial != null)
         {
+            leftTutorial.SetTimeLimitEnabled(true);
             leftTutorial.StopGame();
             leftTutorial.gameObject.SetActive(false);
         }
@@ -83,9 +127,29 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
             rightTutorial.gameObject.SetActive(false);
         }
 
+        if (leftRecoveryTutorial != null)
+        {
+            leftRecoveryTutorial.SetWinEnabled(true);
+            leftRecoveryTutorial.StopGame();
+            leftRecoveryTutorial.gameObject.SetActive(false);
+        }
+
+        if (rightRecoveryTutorial != null)
+        {
+            rightRecoveryTutorial.StopGame();
+            rightRecoveryTutorial.gameObject.SetActive(false);
+        }
+
+        if (leftMinigameManager != null)
+            leftMinigameManager.HideTutorialMinigameTimer();
+
+        if (rightMinigameManager != null)
+            rightMinigameManager.HideTutorialMinigameTimer();
+
         SetActive(rightInputStates, true);
         SetActive(rightCompletedEyes, false);
         SetCursorVisible(false);
+        HidePreviewTitles();
         HideMiniTutorials();
 
         if (audioService != null)
@@ -106,8 +170,6 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
         tutorial.OnWin += HandleTutorialWin;
         tutorial.OnLose += HandleTutorialLose;
         tutorial.gameObject.SetActive(true);
-        if (tutorialView != null)
-            tutorialView.Show(tutorial.TutorialType, miniTutorialFrameInterval);
         tutorial.StartGame();
 
         while (!_tutorialWon)
@@ -128,6 +190,99 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
 
         if (hideAfterWin)
             tutorial.gameObject.SetActive(false);
+    }
+
+    private IEnumerator ShowPreview(
+        SpriteRenderer previewTitle,
+        Sprite sprite,
+        MiniTutorialController tutorialView,
+        MiniTutorialType tutorialType)
+    {
+        if (previewTitle != null)
+        {
+            previewTitle.sprite = sprite;
+            previewTitle.gameObject.SetActive(sprite != null);
+        }
+
+        if (tutorialView != null)
+            tutorialView.Show(tutorialType, miniTutorialFrameInterval);
+
+        PlayMinigameSwitchSound();
+
+        if (previewDuration > 0f)
+            yield return new WaitForSeconds(previewDuration);
+
+        if (previewTitle != null)
+            previewTitle.gameObject.SetActive(false);
+
+        if (previewEndBlankDelay > 0f)
+            yield return new WaitForSeconds(previewEndBlankDelay);
+    }
+
+    private IEnumerator PlayLeftRecoveryTutorial()
+    {
+        if (leftRecoveryTutorial == null)
+            yield break;
+
+        _activeTutorial = leftRecoveryTutorial;
+        _tutorialLost = false;
+        leftRecoveryTutorial.SetTimeLimitEnabled(true);
+        leftRecoveryTutorial.SetWinEnabled(false);
+        leftRecoveryTutorial.OnLose += HandleTutorialLose;
+        leftRecoveryTutorial.gameObject.SetActive(true);
+        if (leftMinigameManager != null)
+            leftMinigameManager.ShowTutorialMinigameTimer(leftRecoveryTutorial);
+
+        leftRecoveryTutorial.StartGame();
+
+        while (!_tutorialLost)
+            yield return null;
+
+        StopActiveTutorial();
+        leftRecoveryTutorial.SetWinEnabled(true);
+
+        if (leftMinigameManager != null)
+            leftMinigameManager.HideTutorialMinigameTimer();
+
+        if (leftTutorialView != null)
+            leftTutorialView.Hide();
+
+        if (leftMinigameManager != null)
+            yield return leftMinigameManager.PlayTutorialLossRecovery(leftRecoveryTutorial);
+        else
+            leftRecoveryTutorial.gameObject.SetActive(false);
+    }
+
+    private IEnumerator PlayRightRecoveryTutorial()
+    {
+        if (rightRecoveryTutorial == null)
+            yield break;
+
+        _activeTutorial = rightRecoveryTutorial;
+        _tutorialLost = false;
+        rightRecoveryTutorial.OnLose += HandleTutorialLose;
+        rightRecoveryTutorial.gameObject.SetActive(true);
+
+        if (rightMinigameManager != null)
+            rightMinigameManager.ShowTutorialMinigameTimer(rightRecoveryTutorial);
+
+        rightRecoveryTutorial.StartGame();
+
+        while (!_tutorialLost)
+            yield return null;
+
+        StopActiveTutorial();
+
+        if (rightMinigameManager != null)
+            rightMinigameManager.HideTutorialMinigameTimer();
+
+        if (rightTutorialView != null)
+            rightTutorialView.Hide();
+
+        if (rightMinigameManager != null)
+            yield return rightMinigameManager.PlayTutorialLossRecovery(rightRecoveryTutorial);
+        else
+            rightRecoveryTutorial.gameObject.SetActive(false);
     }
 
     private void HandleTutorialWin()
@@ -176,6 +331,15 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
 
         if (rightTutorialView != null)
             rightTutorialView.Hide();
+    }
+
+    private void HidePreviewTitles()
+    {
+        if (leftPreviewTitle != null)
+            leftPreviewTitle.gameObject.SetActive(false);
+
+        if (rightPreviewTitle != null)
+            rightPreviewTitle.gameObject.SetActive(false);
     }
 
     private void PlayMinigameSwitchSound()

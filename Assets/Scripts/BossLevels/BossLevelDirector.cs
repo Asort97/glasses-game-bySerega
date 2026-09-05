@@ -32,6 +32,7 @@ public class BossLevelDirector : MonoBehaviour
     private Coroutine _resumeRoutine;
 
     public event Action<int, int> BossProgressChanged;
+    public event Action BossFailed;
 
     public int PassedMinigames => _passedMinigames;
     public int MinigamesPerBoss => minigamesPerBoss;
@@ -203,11 +204,33 @@ public class BossLevelDirector : MonoBehaviour
 
     private void HandleBossFailed(BossLevelBase boss)
     {
-        FinishBoss(boss);
+        if (!StopBoss(boss))
+            return;
+
+        BossFailed?.Invoke();
     }
 
     private void FinishBoss(BossLevelBase boss)
     {
+        if (!StopBoss(boss))
+            return;
+
+        _passedMinigames = 0;
+        BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
+        leftHealth.RestoreHeartsAfterBoss();
+        rightHealth.RestoreHeartsAfterBoss();
+
+        if (_resumeRoutine != null)
+            StopCoroutine(_resumeRoutine);
+
+        _resumeRoutine = StartCoroutine(ResumeAfterBossRoutine());
+    }
+
+    private bool StopBoss(BossLevelBase boss)
+    {
+        if (_activeBoss != boss)
+            return false;
+
         if (_startRoutine != null)
         {
             StopCoroutine(_startRoutine);
@@ -218,15 +241,7 @@ public class BossLevelDirector : MonoBehaviour
         boss.OnFailed -= HandleBossFailed;
         boss.StopBoss();
         _activeBoss = null;
-        _passedMinigames = 0;
-        BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
-        leftHealth.RestoreHeartsAfterBoss();
-        rightHealth.RestoreHeartsAfterBoss();
-
-        if (_resumeRoutine != null)
-            StopCoroutine(_resumeRoutine);
-
-        _resumeRoutine = StartCoroutine(ResumeAfterBossRoutine());
+        return true;
     }
 
     private IEnumerator ResumeAfterBossRoutine()
