@@ -15,7 +15,8 @@ public enum MiniTutorialType
     MouseMoveAndClick,
     MouseDrag,
     MouseSlice,
-    KeyboardSpaceOnly
+    KeyboardSpaceOnly,
+    MouseStill
 }
 
 public class MiniTutorialController : MonoBehaviour
@@ -45,7 +46,15 @@ public class MiniTutorialController : MonoBehaviour
     [SerializeField, Min(0.1f)] private float mouseOrbitDuration = 2f;
     [SerializeField] private Vector2 spaceOnlyPosition = new Vector2(115f, -33f);
 
+    [Header("Recovery")]
+    [SerializeField] private GameObject recoverySpaceParticlePrefab;
+    [SerializeField] private GameObject recoveryMouseParticlePrefab;
+    [SerializeField, Min(0f)] private float recoveryParticleShowDelay = 2f;
+    [SerializeField, Min(0.01f)] private float recoveryParticleFadeDuration = 0.5f;
+
     private Coroutine _animationRoutine;
+    private Coroutine _particleFadeRoutine;
+    private GameObject _recoveryParticle;
     private Vector2 _primaryStartPosition;
     private Vector2 _spaceStartPosition;
     private bool _initialized;
@@ -98,6 +107,43 @@ public class MiniTutorialController : MonoBehaviour
         _animationRoutine = StartCoroutine(Animate(type, customFrameInterval));
     }
 
+    public void ShowRecoveryInput(MiniTutorialType type, float blinkInterval)
+    {
+        GameObject particlePrefab;
+        Transform particleAnchor;
+
+        if (type == MiniTutorialType.KeyboardSpaceOnly)
+        {
+            Show(type, blinkInterval * 2f);
+            particlePrefab = recoverySpaceParticlePrefab;
+            particleAnchor = spaceImage != null ? spaceImage.transform : null;
+        }
+        else if (type == MiniTutorialType.MouseClick)
+        {
+            Show(type, blinkInterval);
+            particlePrefab = recoveryMouseParticlePrefab;
+            particleAnchor = primaryImage != null ? primaryImage.transform : null;
+        }
+        else
+        {
+            return;
+        }
+
+        if (particlePrefab == null || particleAnchor == null)
+            return;
+
+        Vector3 position = particleAnchor.position;
+        position.z -= 0.05f;
+        _recoveryParticle = Instantiate(
+            particlePrefab,
+            position,
+            particlePrefab.transform.rotation);
+
+        ParticleSystem particleSystem = _recoveryParticle.GetComponent<ParticleSystem>();
+        if (particleSystem != null)
+            _particleFadeRoutine = StartCoroutine(FadeInRecoveryParticle(particleSystem));
+    }
+
     public void Hide()
     {
         EnsureInitialized();
@@ -120,6 +166,45 @@ public class MiniTutorialController : MonoBehaviour
             spaceImage.gameObject.SetActive(false);
         }
 
+        if (_recoveryParticle != null)
+        {
+            if (_particleFadeRoutine != null)
+            {
+                StopCoroutine(_particleFadeRoutine);
+                _particleFadeRoutine = null;
+            }
+
+            Destroy(_recoveryParticle);
+            _recoveryParticle = null;
+        }
+
+    }
+
+    private IEnumerator FadeInRecoveryParticle(ParticleSystem particleSystem)
+    {
+        ParticleSystem.MainModule main = particleSystem.main;
+        Color originalColor = main.startColor.color;
+        Color transparentColor = originalColor;
+        transparentColor.a = 0f;
+        main.startColor = transparentColor;
+
+        if (recoveryParticleShowDelay > 0f)
+            yield return new WaitForSecondsRealtime(recoveryParticleShowDelay);
+
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.01f, recoveryParticleFadeDuration);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            Color color = originalColor;
+            color.a *= Mathf.Clamp01(elapsed / duration);
+            main.startColor = color;
+            yield return null;
+        }
+
+        main.startColor = originalColor;
+        _particleFadeRoutine = null;
     }
 
     private IEnumerator Animate(MiniTutorialType type, float customFrameInterval)
@@ -227,7 +312,8 @@ public class MiniTutorialController : MonoBehaviour
 
     private static bool UsesMouse(MiniTutorialType type)
     {
-        return type == MiniTutorialType.MouseMove ||
+        return type == MiniTutorialType.MouseStill ||
+               type == MiniTutorialType.MouseMove ||
                type == MiniTutorialType.MouseClick ||
                type == MiniTutorialType.MouseMoveAndClick ||
                type == MiniTutorialType.MouseDrag ||
@@ -236,7 +322,8 @@ public class MiniTutorialController : MonoBehaviour
 
     private static bool UsesMouseClick(MiniTutorialType type)
     {
-        return type == MiniTutorialType.MouseClick ||
+        return type == MiniTutorialType.MouseStill ||
+               type == MiniTutorialType.MouseClick ||
                type == MiniTutorialType.MouseMoveAndClick ||
                type == MiniTutorialType.MouseDrag;
     }

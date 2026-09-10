@@ -13,7 +13,7 @@ public sealed class UnpressableButtonMovement : MonoBehaviour
     [Header("Movement")]
     [Min(0.01f)] [SerializeField] private float maxSpeed = 8f;
     [Min(0.01f)] [SerializeField] private float acceleration = 50f;
-    [Min(0f)] [SerializeField] private float centerPull = 0.8f;
+    [Min(0f)] [SerializeField] private float centerPull = 12f;
     [Min(0.01f)] [SerializeField] private float avoidRadius = 4f;
     [Min(0f)] [SerializeField] private float avoidStrength = 20f;
     [Min(0f)] [SerializeField] private float orbitStrength = 8f;
@@ -57,7 +57,7 @@ public sealed class UnpressableButtonMovement : MonoBehaviour
         _velocity = Vector2.zero;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (!_moving || !TryGetCursorWorldPosition(out Vector2 cursorPosition))
             return;
@@ -121,15 +121,25 @@ public sealed class UnpressableButtonMovement : MonoBehaviour
 
     private Vector3 ClampToCamera(Vector3 position)
     {
+        GetMovementBounds(out float minX, out float maxX, out float minY, out float maxY);
+
+        position.x = Mathf.Clamp(position.x, minX, maxX);
+        position.y = Mathf.Clamp(position.y, minY, maxY);
+        return position;
+    }
+
+    private void GetMovementBounds(out float minX, out float maxX, out float minY, out float maxY)
+    {
         float halfHeight = gameCamera.orthographicSize;
         float halfWidth = halfHeight * gameCamera.aspect;
         float horizontalPadding = Mathf.Min(edgePadding, Mathf.Max(0f, halfWidth - 0.01f));
         float verticalPadding = Mathf.Min(edgePadding, Mathf.Max(0f, halfHeight - 0.01f));
         Vector3 center = gameCamera.transform.position;
 
-        position.x = Mathf.Clamp(position.x, center.x - halfWidth + horizontalPadding, center.x + halfWidth - horizontalPadding);
-        position.y = Mathf.Clamp(position.y, center.y - halfHeight + verticalPadding, center.y + halfHeight - verticalPadding);
-        return position;
+        minX = center.x - halfWidth + horizontalPadding;
+        maxX = center.x + halfWidth - horizontalPadding;
+        minY = center.y - halfHeight + verticalPadding;
+        maxY = center.y + halfHeight - verticalPadding;
     }
 
     private void CacheLensMapping()

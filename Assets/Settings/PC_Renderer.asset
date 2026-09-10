@@ -166,4 +166,4 @@ MonoBehaviour:
     strength: 0.0175
     excludedLayers:
       serializedVersion: 2
-      m_Bits: 1024
+      m_Bits: 9216

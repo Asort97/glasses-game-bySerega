@@ -5,13 +5,13 @@ public sealed class UnpressableButtonMinigame : MinigameBase
     [SerializeField] private UnpressableButtonMovement buttonMovement;
 
     private float _elapsed;
-    private bool _running;
+    private bool _isRunning;
 
     public override void StartGame()
     {
         base.StartGame();
         _elapsed = 0f;
-        _running = true;
+        _isRunning = true;
 
         if (buttonMovement != null)
             buttonMovement.StartMoving();
@@ -19,7 +19,7 @@ public sealed class UnpressableButtonMinigame : MinigameBase
 
     public override void StopGame()
     {
-        _running = false;
+        _isRunning = false;
 
         if (buttonMovement != null)
             buttonMovement.StopMoving();
@@ -29,7 +29,7 @@ public sealed class UnpressableButtonMinigame : MinigameBase
 
     protected override void Update()
     {
-        if (!_running)
+        if (!_isRunning)
             return;
 
         _elapsed += Time.deltaTime;
@@ -38,7 +38,7 @@ public sealed class UnpressableButtonMinigame : MinigameBase
         if (_elapsed < surviveTime)
             return;
 
-        _running = false;
+        _isRunning = false;
         RaiseLose();
     }
 }

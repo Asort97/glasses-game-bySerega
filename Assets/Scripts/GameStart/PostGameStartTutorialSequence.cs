@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public sealed class PostGameStartTutorialSequence : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
     [SerializeField] private UnpressableButtonMinigame rightRecoveryTutorial;
     [SerializeField] private LensMinigameManager leftMinigameManager;
     [SerializeField] private LensMinigameManager rightMinigameManager;
+    [SerializeField] private LensHealthSystem leftHealth;
+    [SerializeField] private LensHealthSystem rightHealth;
     [SerializeField] private CanvasCursor canvasCursor;
     [SerializeField] private LensAudioService audioService;
 
@@ -33,6 +36,8 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
     [Min(0f)] [SerializeField] private float previewDuration = 2f;
     [Min(0f)] [SerializeField] private float previewEndBlankDelay = 0.2f;
     [Min(0.05f)] [SerializeField] private float miniTutorialFrameInterval = 0.6f;
+    [FormerlySerializedAs("recoverySpaceBlinkInterval")]
+    [Min(0.02f)] [SerializeField] private float recoveryInputBlinkInterval = 0.1f;
 
     private MinigameBase _activeTutorial;
     private bool _tutorialWon;
@@ -107,6 +112,7 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
         SetCursorVisible(true);
         yield return PlayRightRecoveryTutorial();
         SetCursorVisible(false);
+        RestoreTutorialHealth();
         yield return null;
     }
 
@@ -248,7 +254,10 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
             leftTutorialView.Hide();
 
         if (leftMinigameManager != null)
-            yield return leftMinigameManager.PlayTutorialLossRecovery(leftRecoveryTutorial);
+            yield return leftMinigameManager.PlayTutorialLossRecovery(
+                leftRecoveryTutorial,
+                MiniTutorialType.KeyboardSpaceOnly,
+                recoveryInputBlinkInterval);
         else
             leftRecoveryTutorial.gameObject.SetActive(false);
     }
@@ -280,7 +289,10 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
             rightTutorialView.Hide();
 
         if (rightMinigameManager != null)
-            yield return rightMinigameManager.PlayTutorialLossRecovery(rightRecoveryTutorial);
+            yield return rightMinigameManager.PlayTutorialLossRecovery(
+                rightRecoveryTutorial,
+                MiniTutorialType.MouseClick,
+                recoveryInputBlinkInterval);
         else
             rightRecoveryTutorial.gameObject.SetActive(false);
     }
@@ -346,5 +358,14 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
     {
         if (audioService != null)
             audioService.Click();
+    }
+
+    private void RestoreTutorialHealth()
+    {
+        if (leftHealth != null)
+            leftHealth.RestoreFullHealthAfterTutorial();
+
+        if (rightHealth != null)
+            rightHealth.RestoreFullHealthAfterTutorial();
     }
 }

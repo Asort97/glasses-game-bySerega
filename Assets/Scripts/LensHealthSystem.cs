@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class LensHealthSystem : MonoBehaviour
 {
@@ -17,13 +19,18 @@ public class LensHealthSystem : MonoBehaviour
     [Header("Hearts")]
     [SerializeField] private LensHeartsView heartsView;
     [SerializeField] private bool loseFromLeft;
+    [SerializeField] private bool isLeftLens;
 
     [Header("Lens")]
     [SerializeField] private Renderer lensRenderer;
     [SerializeField] private string colorProperty = "_BaseColor";
-    [SerializeField] private Renderer otherLensNoiseRenderer;
-    [SerializeField] private string noiseStrengthProperty = "_TVNoiseStrength";
     [SerializeField] private float recoveryDuration = 5f;
+
+    [Header("Opposite Lens Flicker")]
+    [FormerlySerializedAs("otherLensNoiseRenderer")]
+    [SerializeField] private Renderer otherLensFlickerRenderer;
+    [SerializeField, Range(0.01f, 0.95f)] private float flickerStartWidth = 0.01f;
+    [SerializeField, Range(0.01f, 0.95f)] private float flickerEndWidth = 0.61f;
 
     private const int Phase1Target = 7;
     private const int Phase2Target = 8;
@@ -36,17 +43,24 @@ public class LensHealthSystem : MonoBehaviour
     private float _recoveryTimer;
     private int _pressCount;
     private bool _phase2;
-    private Material _otherLensMaterial;
+    private Material _otherLensFlickerMaterial;
+    private Color _otherLensFlickerColor = Color.white;
+
+    private static readonly int FlickerEnabledId = Shader.PropertyToID("_FlickerBandingEnabled");
+    private static readonly int FlickerColorId = Shader.PropertyToID("_FlickerBandColor");
+    private static readonly int FlickerWidthId = Shader.PropertyToID("_FlickerBandWidth");
 
     public bool IsBroken => _broken;
     public bool IsPermanentlyBroken => _permanentlyBroken;
     public int CurrentHp => _hp;
     public bool LoseFromLeft => loseFromLeft;
+    public bool IsLeftLens => isLeftLens;
 
     private void Awake()
     {
         _hp = maxHP;
-        CacheOtherLensMaterial();
+        CacheOtherLensFlickerMaterial();
+        DisableOtherLensFlicker();
 
         if (heartsView != null)
             heartsView.Hide();
@@ -82,10 +96,10 @@ public class LensHealthSystem : MonoBehaviour
         _phase2 = false;
         _recoveryTimer = 0f;
         if (!_tutorialRecovery)
-            SetOtherLensNoise(0f);
+            BeginOtherLensFlicker();
 
         SetLensColor(_permanentlyBroken ? Color.black : Color.white);
-        LensAudioService.Instance.PlayTVon(false, loseFromLeft ? -1f : 1f);
+        LensAudioService.Instance.PlayTVon(false, isLeftLens ? -1f : 1f);
 
         if (!_tutorialRecovery && manager != null)
             manager.SetPaused(true);
@@ -104,7 +118,8 @@ public class LensHealthSystem : MonoBehaviour
         if (!_tutorialRecovery)
         {
             _recoveryTimer += Time.deltaTime;
-            SetOtherLensNoise(Mathf.Clamp01(_recoveryTimer / Mathf.Max(0.01f, recoveryDuration)));
+            UpdateOtherLensFlicker(
+                Mathf.Clamp01(_recoveryTimer / Mathf.Max(0.01f, recoveryDuration)));
 
             if (_recoveryTimer >= recoveryDuration)
             {
@@ -153,9 +168,9 @@ public class LensHealthSystem : MonoBehaviour
         _tutorialRecovery = false;
         _recoveryTimer = 0f;
         if (!tutorialRecovery)
-            SetOtherLensNoise(0f);
+            DisableOtherLensFlicker();
         SetLensColor(Color.white);
-        LensAudioService.Instance.PlayTVon(true, loseFromLeft ? -1f : 1f);
+        LensAudioService.Instance.PlayTVon(true, isLeftLens ? -1f : 1f);
 
         if (heartsView != null)
             heartsView.Hide();
@@ -172,7 +187,7 @@ public class LensHealthSystem : MonoBehaviour
         _gameOver = true;
         _broken = true;
         _tutorialRecovery = false;
-        SetOtherLensNoise(0f);
+        DisableOtherLensFlicker();
         SetLensColor(Color.white);
 
         if (heartsView != null)
@@ -192,6 +207,17 @@ public class LensHealthSystem : MonoBehaviour
 
     public void ResetHealth()
     {
+        RestoreFullHealthState();
+        LensAudioService.Instance.PlayTVon(true, isLeftLens ? -1f : 1f);
+    }
+
+    public void RestoreFullHealthAfterTutorial()
+    {
+        RestoreFullHealthState();
+    }
+
+    private void RestoreFullHealthState()
+    {
         _hp = maxHP;
         _broken = false;
         _permanentlyBroken = false;
@@ -201,19 +227,23 @@ public class LensHealthSystem : MonoBehaviour
         _pressCount = 0;
         _phase2 = false;
 
-        SetOtherLensNoise(0f);
+        DisableOtherLensFlicker();
         SetLensColor(Color.white);
 
         if (heartsView != null)
             heartsView.Hide();
-
-        LensAudioService.Instance.PlayTVon(true, loseFromLeft ? -1f : 1f);
     }
 
     public void ShowSingleHeartForBoss()
     {
         if (heartsView != null)
             heartsView.ShowSingleHeart(_hp, loseFromLeft);
+    }
+
+    public IEnumerator BreakToSingleHeartForBoss(float frameDuration)
+    {
+        if (heartsView != null)
+            yield return heartsView.BreakToSingleHeart(_hp, loseFromLeft, frameDuration);
     }
 
     public void RestoreHeartsAfterBoss()
@@ -259,18 +289,65 @@ public class LensHealthSystem : MonoBehaviour
             material.SetColor("_Color", color);
     }
 
-    private void CacheOtherLensMaterial()
+    private void CacheOtherLensFlickerMaterial()
     {
-        if (otherLensNoiseRenderer != null)
-            _otherLensMaterial = otherLensNoiseRenderer.material;
+        if (otherLensFlickerRenderer == null)
+            return;
+
+        _otherLensFlickerMaterial = otherLensFlickerRenderer.material;
+        if (_otherLensFlickerMaterial.HasProperty(FlickerColorId))
+            _otherLensFlickerColor = _otherLensFlickerMaterial.GetColor(FlickerColorId);
     }
 
-    private void SetOtherLensNoise(float value)
+    private void BeginOtherLensFlicker()
     {
-        if (_otherLensMaterial == null)
-            CacheOtherLensMaterial();
+        EnsureOtherLensFlickerMaterial();
+        if (_otherLensFlickerMaterial == null)
+            return;
 
-        if (_otherLensMaterial != null && _otherLensMaterial.HasProperty(noiseStrengthProperty))
-            _otherLensMaterial.SetFloat(noiseStrengthProperty, value);
+        if (_otherLensFlickerMaterial.HasProperty(FlickerEnabledId))
+            _otherLensFlickerMaterial.SetFloat(FlickerEnabledId, 1f);
+
+        UpdateOtherLensFlicker(0f);
+    }
+
+    private void UpdateOtherLensFlicker(float progress)
+    {
+        EnsureOtherLensFlickerMaterial();
+        if (_otherLensFlickerMaterial == null)
+            return;
+
+        progress = Mathf.Clamp01(progress);
+
+        if (_otherLensFlickerMaterial.HasProperty(FlickerColorId))
+        {
+            Color color = _otherLensFlickerColor;
+            color.a = progress;
+            _otherLensFlickerMaterial.SetColor(FlickerColorId, color);
+        }
+
+        if (_otherLensFlickerMaterial.HasProperty(FlickerWidthId))
+        {
+            float width = Mathf.Lerp(flickerStartWidth, flickerEndWidth, progress);
+            _otherLensFlickerMaterial.SetFloat(FlickerWidthId, width);
+        }
+    }
+
+    private void DisableOtherLensFlicker()
+    {
+        EnsureOtherLensFlickerMaterial();
+        if (_otherLensFlickerMaterial == null)
+            return;
+
+        if (_otherLensFlickerMaterial.HasProperty(FlickerEnabledId))
+            _otherLensFlickerMaterial.SetFloat(FlickerEnabledId, 0f);
+
+        UpdateOtherLensFlicker(0f);
+    }
+
+    private void EnsureOtherLensFlickerMaterial()
+    {
+        if (_otherLensFlickerMaterial == null)
+            CacheOtherLensFlickerMaterial();
     }
 }

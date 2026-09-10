@@ -108,8 +108,14 @@ public class LensGameOverController : MonoBehaviour
         foreach (LensHealthSystem health in healthSystems)
             health.ResetHealth();
 
+        bool skipInitialSequence = GameAdminSettings.SkipInitialIntroAndTutorial;
         foreach (LensMinigameManager manager in minigameManagers)
-            manager.RestartFromGameStart();
+        {
+            if (skipInitialSequence)
+                manager.RestartFromRegularMinigames();
+            else
+                manager.RestartFromGameStart();
+        }
 
         if (crtPowerOffController != null)
             yield return crtPowerOffController.PlayPowerOn();

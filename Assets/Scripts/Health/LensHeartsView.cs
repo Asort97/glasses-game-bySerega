@@ -1,3 +1,4 @@
+using System.Collections;
 using DG.Tweening;
 using UnityEngine;
 
@@ -36,6 +37,37 @@ public sealed class LensHeartsView : MonoBehaviour
         {
             if (hearts[i] != null && i != keepIndex)
                 hearts[i].gameObject.SetActive(false);
+        }
+    }
+
+    public IEnumerator BreakToSingleHeart(
+        int currentHp,
+        bool loseFromLeft,
+        float frameDuration)
+    {
+        if (hearts == null || hearts.Length == 0)
+            yield break;
+
+        frameDuration = Mathf.Max(0f, frameDuration);
+        int visibleHp = Mathf.Clamp(currentHp, 0, hearts.Length);
+        ShowRemaining(visibleHp, loseFromLeft, 0);
+
+        while (visibleHp > 1)
+        {
+            int heartIndex = GetNextLostHeartIndex(visibleHp, loseFromLeft);
+            if (!IsValidHeart(heartIndex))
+                yield break;
+
+            SpriteRenderer heart = hearts[heartIndex];
+            heart.sprite = damagedSprite;
+            yield return new WaitForSeconds(frameDuration);
+
+            heart.sprite = brokenSprite;
+            yield return new WaitForSeconds(frameDuration);
+
+            SetAlpha(heart, 0f);
+            heart.gameObject.SetActive(false);
+            visibleHp--;
         }
     }
 
@@ -82,8 +114,18 @@ public sealed class LensHeartsView : MonoBehaviour
 
             heart.gameObject.SetActive(!isLost);
             if (!isLost)
+            {
+                SetAlpha(heart, 1f);
                 heart.sprite = stateSprite;
+            }
         }
+    }
+
+    private static void SetAlpha(SpriteRenderer heart, float alpha)
+    {
+        Color color = heart.color;
+        color.a = alpha;
+        heart.color = color;
     }
 
     private int GetNextLostHeartIndex(int currentHp, bool loseFromLeft)

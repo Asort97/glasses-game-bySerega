@@ -21,6 +21,7 @@ public class LensMinigameManager : MonoBehaviour
     [SerializeField] private BossLevelDirector bossDirector;
     [SerializeField] private MiniTutorialController tutorialController;
     [SerializeField] private LensLossPresentation lossPresentation;
+    [SerializeField] private GlassesLossRocking glassesLossRocking;
 
     [Header("Game Camera")]
     [SerializeField] private Transform gameCameraTransform;
@@ -107,16 +108,36 @@ public class LensMinigameManager : MonoBehaviour
 
     public void RestartFromGameStart()
     {
+        Restart(false);
+    }
+
+    public void RestartFromRegularMinigames()
+    {
+        Restart(true);
+    }
+
+    private void Restart(bool skipInitialSequence)
+    {
         _testMode = false;
         _testMinigame = null;
         _paused = false;
         _waitingForBoss = false;
         _pausedMinigame = null;
         enabled = true;
-        Begin(true);
+        BeginInternal(true, skipInitialSequence);
     }
 
     public void Begin(bool restart = false)
+    {
+        BeginInternal(restart, false);
+    }
+
+    public void BeginWithoutInitialSequence(bool restart = false)
+    {
+        BeginInternal(restart, true);
+    }
+
+    private void BeginInternal(bool restart, bool skipInitialSequence)
     {
         ResolvePreviewTitle();
         HidePreviewTitle();
@@ -136,7 +157,7 @@ public class LensMinigameManager : MonoBehaviour
 
         _started = true;
         StopSwitchRoutine();
-        _startMinigamePlayed = false;
+        _startMinigamePlayed = skipInitialSequence;
         _lastIdx = -1;
         _waitingForBoss = false;
         _nextPreviewClickDelay = 0f;
@@ -346,6 +367,9 @@ public class LensMinigameManager : MonoBehaviour
     {
         if (showResult)
         {
+            if (isLose)
+                PlayGlassesLossRocking();
+
             PlayResultSound(isLose);
             ShowResultTitle(isLose ? loseResultSprite : winResultSprite);
             if (isLose)
@@ -428,10 +452,14 @@ public class LensMinigameManager : MonoBehaviour
             QueueNext();
     }
 
-    public IEnumerator PlayTutorialLossRecovery(MinigameBase tutorial)
+    public IEnumerator PlayTutorialLossRecovery(
+        MinigameBase tutorial,
+        MiniTutorialType recoveryTutorialType = MiniTutorialType.None,
+        float recoveryBlinkInterval = 0.1f)
     {
         HideTutorial();
         HideTutorialMinigameTimer();
+        PlayGlassesLossRocking();
         PlayResultSound(true);
         ShowResultTitle(loseResultSprite);
         yield return ShakeLoseResult(tutorial);
@@ -439,8 +467,14 @@ public class LensMinigameManager : MonoBehaviour
 
         if (health != null && health.BeginTutorialRecovery())
         {
+            if (recoveryTutorialType != MiniTutorialType.None && tutorialController != null)
+                tutorialController.ShowRecoveryInput(recoveryTutorialType, recoveryBlinkInterval);
+
             while (health.IsBroken)
                 yield return null;
+
+            if (recoveryTutorialType != MiniTutorialType.None)
+                HideTutorial();
         }
 
         if (tutorial != null)
@@ -511,6 +545,12 @@ public class LensMinigameManager : MonoBehaviour
             yield return new WaitForSeconds(resultDuration);
 
         ResetLoseCamera();
+    }
+
+    private void PlayGlassesLossRocking()
+    {
+        if (glassesLossRocking != null && health != null)
+            glassesLossRocking.Play(health.IsLeftLens);
     }
 
     private void ResetLoseCamera()

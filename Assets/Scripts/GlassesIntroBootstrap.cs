@@ -42,12 +42,17 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         "_Tint"
     };
 
+    private bool _skipInitialSequence;
+
     private void Awake()
     {
         ResolveMissingReferences();
+        _skipInitialSequence = !testMode && GameAdminSettings.SkipInitialIntroAndTutorial;
 
         if (testMode)
             PrepareTestState();
+        else if (_skipInitialSequence)
+            PrepareSkippedState();
         else
             PrepareHiddenState();
     }
@@ -56,6 +61,8 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
     {
         if (testMode)
             StartCoroutine(TestModeRoutine());
+        else if (_skipInitialSequence)
+            StartCoroutine(SkippedBootstrapRoutine());
         else
             StartCoroutine(BootstrapRoutine());
     }
@@ -118,6 +125,18 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
             glassesAnimator.enabled = false;
     }
 
+    private void PrepareSkippedState()
+    {
+        SetManagersEnabled(false);
+        SetActive(gameplayRoots, true);
+        HideMinigames();
+        ApplyIntroEndPose();
+        SetLensColor(visibleLensColor);
+
+        if (crtPowerOffController != null)
+            crtPowerOffController.ResetEffect();
+    }
+
     private IEnumerator TestModeRoutine()
     {
         yield return PlayIntroAnimation();
@@ -175,6 +194,21 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
         if (crtPowerOffController != null)
             yield return crtPowerOffController.PlayPowerOn();
+    }
+
+    private IEnumerator SkippedBootstrapRoutine()
+    {
+        SetLensColor(visibleLensColor);
+        LensAudioService.Instance.SwitchToMenuTheme();
+        LensAudioService.Instance.PlayTVon(true, -1f);
+        LensAudioService.Instance.PlayTVon(true, 1f);
+
+        if (desktopScreenshotBackground != null)
+            desktopScreenshotBackground.PlayLensEnabledEffect();
+
+        SetActive(gameplayRoots, true);
+        StartManagers(true);
+        yield break;
     }
 
     private IEnumerator PlayIntroAnimation()
@@ -279,7 +313,7 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         }
     }
 
-    private void StartManagers()
+    private void StartManagers(bool skipInitialSequence = false)
     {
         if (minigameManagers == null)
             return;
@@ -290,8 +324,27 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
                 continue;
 
             manager.enabled = true;
-            manager.Begin(true);
+            if (skipInitialSequence)
+                manager.BeginWithoutInitialSequence(true);
+            else
+                manager.Begin(true);
         }
+    }
+
+    private void ApplyIntroEndPose()
+    {
+        if (glassesAnimator == null)
+            return;
+
+        glassesAnimator.gameObject.SetActive(true);
+        glassesAnimator.enabled = true;
+        glassesAnimator.Rebind();
+        glassesAnimator.Update(0f);
+
+        AnimatorStateInfo state = glassesAnimator.GetCurrentAnimatorStateInfo(0);
+        glassesAnimator.Play(state.fullPathHash, 0, 1f);
+        glassesAnimator.Update(0f);
+        glassesAnimator.enabled = false;
     }
 
     private void HideMinigames()

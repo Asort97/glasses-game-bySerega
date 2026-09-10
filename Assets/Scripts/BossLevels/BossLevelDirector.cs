@@ -20,6 +20,8 @@ public class BossLevelDirector : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float bothWaitingPreviewDuration = 2f;
     [Min(0f)]
+    [SerializeField] private float heartBreakFrameDuration = 0.12f;
+    [Min(0f)]
     [SerializeField] private float heartsHideDelay = 0.2f;
 
     private int _passedMinigames;
@@ -120,8 +122,13 @@ public class BossLevelDirector : MonoBehaviour
         leftManager.HideBossWaitingPreview();
         rightManager.HideBossWaitingPreview();
 
-        leftHealth.ShowSingleHeartForBoss();
-        rightHealth.ShowSingleHeartForBoss();
+        Coroutine leftHeartAnimation = StartCoroutine(
+            leftHealth.BreakToSingleHeartForBoss(heartBreakFrameDuration));
+        Coroutine rightHeartAnimation = StartCoroutine(
+            rightHealth.BreakToSingleHeartForBoss(heartBreakFrameDuration));
+
+        yield return leftHeartAnimation;
+        yield return rightHeartAnimation;
 
         if (heartsHideDelay > 0f)
             yield return new WaitForSeconds(heartsHideDelay);
