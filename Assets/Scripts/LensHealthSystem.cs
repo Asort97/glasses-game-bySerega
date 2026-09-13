@@ -43,6 +43,7 @@ public class LensHealthSystem : MonoBehaviour
     private float _recoveryTimer;
     private int _pressCount;
     private bool _phase2;
+    private Material _lensMaterial;
     private Material _otherLensFlickerMaterial;
     private Color _otherLensFlickerColor = Color.white;
 
@@ -59,6 +60,7 @@ public class LensHealthSystem : MonoBehaviour
     private void Awake()
     {
         _hp = maxHP;
+        CacheLensMaterial();
         CacheOtherLensFlickerMaterial();
         DisableOtherLensFlicker();
 
@@ -279,14 +281,18 @@ public class LensHealthSystem : MonoBehaviour
 
     private void SetLensColor(Color color)
     {
-        if (lensRenderer == null)
+        if (_lensMaterial == null)
             return;
 
-        Material material = lensRenderer.material;
-        if (material.HasProperty(colorProperty))
-            material.SetColor(colorProperty, color);
-        else if (material.HasProperty("_Color"))
-            material.SetColor("_Color", color);
+        if (_lensMaterial.HasProperty(colorProperty))
+            _lensMaterial.SetColor(colorProperty, color);
+        else if (_lensMaterial.HasProperty("_Color"))
+            _lensMaterial.SetColor("_Color", color);
+    }
+
+    private void CacheLensMaterial()
+    {
+        _lensMaterial = lensRenderer.material;
     }
 
     private void CacheOtherLensFlickerMaterial()

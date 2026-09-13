@@ -61,7 +61,7 @@ public class CanvasCursor : MonoBehaviour
         RectTransform canvasRect = (RectTransform)canvas.transform;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRect,
-                GameInput.MousePosition,
+                GameInput.CursorPosition,
                 canvasCamera,
                 out Vector2 localPosition))
         {

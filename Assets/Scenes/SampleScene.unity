@@ -9527,6 +9527,7 @@ GameObject:
   - component: {fileID: 960290347}
   - component: {fileID: 960290348}
   - component: {fileID: 960290349}
+  - component: {fileID: 960290350}
   m_Layer: 13
   m_Name: DebuffWindows
   m_TagString: Untagged
@@ -9604,12 +9605,12 @@ MonoBehaviour:
     randomWeight: 1
   - id: 4
     title: More upgrades
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 5
     title: Ambidextrous update
-    randomSpawnEnabled: 0
+    randomSpawnEnabled: 1
     canBeCancelled: 1
     randomWeight: 1
   - id: 6
@@ -9690,6 +9691,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debuffSpawner: {fileID: 960290346}
+--- !u!114 &960290350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960290344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e5ad493e99cde1429ddaa21c57ca672, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debuffSpawner: {fileID: 960290346}
+  mainCamera: {fileID: 330585545}
+  leftLensRenderer: {fileID: 4502653419961103261}
+  rightLensRenderer: {fileID: 6655408121348728893}
+  leftMiniTutorial: {fileID: 460718278}
+  rightMiniTutorial: {fileID: 1122497132}
+  duration: 30
 --- !u!1 &969638694
 GameObject:
   m_ObjectHideFlags: 0

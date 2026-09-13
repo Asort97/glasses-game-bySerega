@@ -37,6 +37,7 @@ public sealed class DebuffSpawner : MonoBehaviour
 
     public event Action<DebuffId> DebuffApplied;
     public event Action<DebuffId> DebuffDismissed;
+    public event Action RunReset;
 
     private void Start()
     {
@@ -81,6 +82,7 @@ public sealed class DebuffSpawner : MonoBehaviour
         StopSpawning();
         ClearWindows();
         _additionalWindowStacks = 0;
+        RunReset?.Invoke();
         StartSpawning();
     }
 
