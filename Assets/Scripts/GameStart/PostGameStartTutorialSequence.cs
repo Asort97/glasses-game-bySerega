@@ -27,7 +27,7 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
 
     [Header("Right Tutorial States")]
     [SerializeField] private GameObject[] rightInputStates;
-    [SerializeField] private GameObject[] rightCompletedEyes;
+    [SerializeField] private GameObject rightCompletedQuad;
 
     [Header("Timing")]
     [Min(0f)] [SerializeField] private float delayBeforeLeftTutorial = 2f;
@@ -77,13 +77,13 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
             rightTutorial != null ? rightTutorial.TutorialType : MiniTutorialType.None);
 
         SetActive(rightInputStates, true);
-        SetActive(rightCompletedEyes, false);
+        SetCompletedQuadActive(false);
         SetCursorVisible(true);
         yield return PlayUntilWin(rightTutorial, rightTutorialView, false);
 
         SetCursorVisible(false);
         SetActive(rightInputStates, false);
-        SetActive(rightCompletedEyes, true);
+        SetCompletedQuadActive(true);
         if (audioService != null)
             audioService.PlayEye();
 
@@ -93,7 +93,7 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
         if (audioService != null)
             audioService.StopEye();
         rightTutorial.gameObject.SetActive(false);
-        SetActive(rightCompletedEyes, false);
+        SetCompletedQuadActive(false);
 
         yield return ShowPreview(
             leftPreviewTitle,
@@ -153,7 +153,7 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
             rightMinigameManager.HideTutorialMinigameTimer();
 
         SetActive(rightInputStates, true);
-        SetActive(rightCompletedEyes, false);
+        SetCompletedQuadActive(false);
         SetCursorVisible(false);
         HidePreviewTitles();
         HideMiniTutorials();
@@ -328,6 +328,12 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
             if (obj != null)
                 obj.SetActive(active);
         }
+    }
+
+    private void SetCompletedQuadActive(bool active)
+    {
+        if (rightCompletedQuad != null)
+            rightCompletedQuad.SetActive(active);
     }
 
     private void SetCursorVisible(bool visible)
