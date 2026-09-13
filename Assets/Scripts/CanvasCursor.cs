@@ -61,7 +61,7 @@ public class CanvasCursor : MonoBehaviour
         RectTransform canvasRect = (RectTransform)canvas.transform;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRect,
-                Input.mousePosition,
+                GameInput.MousePosition,
                 canvasCamera,
                 out Vector2 localPosition))
         {
@@ -77,7 +77,7 @@ public class CanvasCursor : MonoBehaviour
             return;
 
         bool isOverRightLens = rightLensCollider.Raycast(
-            mainCamera.ScreenPointToRay(Input.mousePosition),
+            mainCamera.ScreenPointToRay(GameInput.MousePosition),
             out _,
             Mathf.Infinity);
 

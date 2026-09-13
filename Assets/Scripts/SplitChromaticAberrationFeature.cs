@@ -32,6 +32,12 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
     private static readonly int PropStrength   = Shader.PropertyToID("_Strength");
     private static readonly int PropMaskTexture = Shader.PropertyToID("_SplitCAMaskTexture");
     private static readonly int PropExcludeAll = Shader.PropertyToID("_ExcludeAll");
+    private float _colorSwap;
+
+    public void SetColorSwap(float amount)
+    {
+        _colorSwap = Mathf.Clamp01(amount);
+    }
 
     public override void Create()
     {
@@ -52,8 +58,12 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
         if (_material == null || _pass == null) return;
         if (renderingData.cameraData.cameraType != CameraType.Game) return;
 
-        _material.SetColor(PropLeftColor,  settings.leftColor);
-        _material.SetColor(PropRightColor, settings.rightColor);
+        _material.SetColor(
+            PropLeftColor,
+            Color.Lerp(settings.leftColor, settings.rightColor, _colorSwap));
+        _material.SetColor(
+            PropRightColor,
+            Color.Lerp(settings.rightColor, settings.leftColor, _colorSwap));
         _material.SetFloat(PropStrength,   settings.strength);
         _material.SetFloat(PropExcludeAll, settings.excludedLayers.value == -1 ? 1f : 0f);
         _pass.ExcludedLayerMask = settings.excludedLayers;

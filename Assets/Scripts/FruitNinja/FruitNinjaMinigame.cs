@@ -327,7 +327,7 @@ public class FruitNinjaMinigame : MinigameBase
             return;
         }
 
-        Vector2 currentScreen = Input.mousePosition;
+        Vector2 currentScreen = GameInput.MousePosition;
         if (!_hasPreviousPoint)
         {
             _previousPoint = current;
@@ -375,7 +375,7 @@ public class FruitNinjaMinigame : MinigameBase
         worldPoint = default;
         if (mainCamera == null || rightGameCamera == null || _lensCollider == null) return false;
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(GameInput.MousePosition);
         Vector2 uv;
         if (_lensCollider.Raycast(ray, out RaycastHit hit, 1000f))
         {

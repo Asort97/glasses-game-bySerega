@@ -90,7 +90,7 @@ public sealed class ButtonInputMinigame : MinigameBase
         if (screenCamera == null || gameCamera == null || lensCollider == null || buttonRenderer == null)
             return false;
 
-        Ray ray = screenCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = screenCamera.ScreenPointToRay(GameInput.MousePosition);
         if (!lensCollider.Raycast(ray, out RaycastHit hit, 1000f))
             return false;
 

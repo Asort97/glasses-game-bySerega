@@ -13,6 +13,7 @@ Shader "Custom/CRT Scanline Lens"
         _RGBOffset("RGB Offset", Range(0, 0.02)) = 0.003
         _HorizontalBleed("Horizontal Bleed", Range(0, 1)) = 0.2
         _TVNoiseStrength("TV Noise Strength", Range(0, 1)) = 0
+        _NightModeDarkness("Night Mode Darkness", Range(0, 1)) = 0
 
         [Toggle] _CRTPowerOffEnabled("CRT Power Off Enabled", Float) = 0
         _CRTPowerOffProgress("CRT Power Off Progress", Range(0, 1)) = 0
@@ -87,6 +88,7 @@ Shader "Custom/CRT Scanline Lens"
                 half _RGBOffset;
                 half _HorizontalBleed;
                 half _TVNoiseStrength;
+                half _NightModeDarkness;
                 half _CRTPowerOffEnabled;
                 half _CRTPowerOffProgress;
                 half _FlickerBandingEnabled;
@@ -370,6 +372,7 @@ Shader "Custom/CRT Scanline Lens"
                 color *= vignette;
                 color = ApplyTVNoise(uv, color);
                 color = ApplyFlickerBanding(bandUv, color);
+                color *= 1.0h - saturate(_NightModeDarkness);
                 color = ApplyCrtPowerOff(displayUv, color);
 
                 return half4(saturate(color), baseColor.a);

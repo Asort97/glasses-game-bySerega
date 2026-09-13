@@ -18,6 +18,11 @@ public sealed class DebuffSpawner : MonoBehaviour
     [Min(1)] [SerializeField] private int maxConcurrentWindows = 3;
     [SerializeField] private bool spawnOnStart = true;
 
+    [Header("Window Batch")]
+    [Min(0f)] [SerializeField] private float additionalWindowDelay = 0.4f;
+    [Range(0f, 1f)] [SerializeField] private float secondWindowLoadingVolume = 0.25f;
+    [Range(0f, 1f)] [SerializeField] private float thirdWindowLoadingVolume = 0.07f;
+
     [Header("Placement")]
     [Min(0f)] [SerializeField] private float screenPadding = 20f;
     [Min(1)] [SerializeField] private int placementAttempts = 12;
@@ -28,6 +33,7 @@ public sealed class DebuffSpawner : MonoBehaviour
     private readonly List<DebuffWindow> _activeWindows = new List<DebuffWindow>();
     private readonly Dictionary<DebuffWindow, int> _loadingSoundIds = new Dictionary<DebuffWindow, int>();
     private Coroutine _spawnRoutine;
+    private int _additionalWindowStacks;
 
     public event Action<DebuffId> DebuffApplied;
     public event Action<DebuffId> DebuffDismissed;
@@ -62,7 +68,20 @@ public sealed class DebuffSpawner : MonoBehaviour
     public bool Show(DebuffId id)
     {
         DebuffDefinition definition = GetDefinition(id);
-        return definition != null && SpawnWindow(definition);
+        return definition != null && SpawnWindow(definition, 1f);
+    }
+
+    public void AddWindowPerBatch()
+    {
+        _additionalWindowStacks = Mathf.Min(_additionalWindowStacks + 1, 2);
+    }
+
+    public void ResetForNewRun()
+    {
+        StopSpawning();
+        ClearWindows();
+        _additionalWindowStacks = 0;
+        StartSpawning();
     }
 
     public void ClearWindows()
@@ -97,13 +116,39 @@ public sealed class DebuffSpawner : MonoBehaviour
                 continue;
 
             elapsed = 0f;
-            DebuffDefinition definition = PickRandomDefinition();
-            if (definition != null)
-                SpawnWindow(definition);
+            yield return SpawnBatch();
         }
     }
 
-    private bool SpawnWindow(DebuffDefinition definition)
+    private IEnumerator SpawnBatch()
+    {
+        int windowCount = Mathf.Min(1 + _additionalWindowStacks, maxConcurrentWindows);
+
+        for (int index = 0; index < windowCount; index++)
+        {
+            if (index > 0 && additionalWindowDelay > 0f)
+                yield return new WaitForSecondsRealtime(additionalWindowDelay);
+
+            if (!IsGameplayActive())
+                yield break;
+
+            DebuffDefinition definition = PickRandomDefinition();
+            if (definition != null)
+                SpawnWindow(definition, GetLoadingVolume(index));
+        }
+    }
+
+    private float GetLoadingVolume(int windowIndex)
+    {
+        if (windowIndex == 1)
+            return secondWindowLoadingVolume;
+        if (windowIndex >= 2)
+            return thirdWindowLoadingVolume;
+
+        return 1f;
+    }
+
+    private bool SpawnWindow(DebuffDefinition definition, float loadingVolume)
     {
         RemoveMissingWindows();
 
@@ -124,7 +169,7 @@ public sealed class DebuffSpawner : MonoBehaviour
         SetCursorOverride(true);
 
         if (audioService != null)
-            _loadingSoundIds[window] = audioService.StartDebuffLoading();
+            _loadingSoundIds[window] = audioService.StartDebuffLoading(loadingVolume);
 
         return true;
     }

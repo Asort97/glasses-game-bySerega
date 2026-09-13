@@ -112,12 +112,13 @@ public class LensAudioService : MonoBehaviour
         PlayOneShot(closeDebuff);
     }
 
-    public int StartDebuffLoading()
+    public int StartDebuffLoading(float volume = 1f)
     {
         if (loadingDebuff.IsNull)
             return -1;
 
         EventInstance instance = RuntimeManager.CreateInstance(loadingDebuff);
+        instance.setVolume(Mathf.Clamp01(volume));
         instance.start();
 
         int id = _nextDebuffLoadingId++;

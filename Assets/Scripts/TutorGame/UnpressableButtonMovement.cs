@@ -94,7 +94,7 @@ public sealed class UnpressableButtonMovement : MonoBehaviour
             lensMeshFilter == null || lensCollider == null)
             return false;
 
-        Ray ray = screenCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = screenCamera.ScreenPointToRay(GameInput.MousePosition);
         Vector2 uv;
 
         if (lensCollider.Raycast(ray, out RaycastHit hit, 1000f))

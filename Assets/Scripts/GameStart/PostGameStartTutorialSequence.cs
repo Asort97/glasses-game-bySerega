@@ -35,6 +35,7 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
     [Min(0f)] [SerializeField] private float completedEyesDuration = 3f;
     [Min(0f)] [SerializeField] private float previewDuration = 2f;
     [Min(0f)] [SerializeField] private float previewEndBlankDelay = 0.2f;
+    [Min(0f)] [SerializeField] private float ringsWinDelay = 0.5f;
     [Min(0.05f)] [SerializeField] private float miniTutorialFrameInterval = 0.6f;
     [FormerlySerializedAs("recoverySpaceBlinkInterval")]
     [Min(0.02f)] [SerializeField] private float recoveryInputBlinkInterval = 0.1f;
@@ -189,6 +190,9 @@ public sealed class PostGameStartTutorialSequence : MonoBehaviour
 
             yield return null;
         }
+
+        if (tutorial is RingsMinigame && ringsWinDelay > 0f)
+            yield return new WaitForSeconds(ringsWinDelay);
 
         StopActiveTutorial();
         if (tutorialView != null)

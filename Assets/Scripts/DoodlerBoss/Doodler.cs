@@ -208,7 +208,7 @@ public class Doodler : MonoBehaviour
         Bounds lensBounds = rightLensRenderer.bounds;
         float leftScreenX = mainCamera.WorldToScreenPoint(lensBounds.min).x;
         float rightScreenX = mainCamera.WorldToScreenPoint(lensBounds.max).x;
-        float lensScreenX = Mathf.InverseLerp(leftScreenX, rightScreenX, Input.mousePosition.x);
+        float lensScreenX = Mathf.InverseLerp(leftScreenX, rightScreenX, GameInput.MousePosition.x);
 
         float centerX = rightGameCamera.transform.position.x;
         targetX = Mathf.Lerp(centerX + leftLimit, centerX + rightLimit, lensScreenX);

@@ -67,7 +67,7 @@ public class RightLensMouseFollower : MonoBehaviour
     {
         uv = default;
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(GameInput.MousePosition);
         if (_lensCollider.Raycast(ray, out RaycastHit hit, 1000f))
         {
             uv = hit.textureCoord;

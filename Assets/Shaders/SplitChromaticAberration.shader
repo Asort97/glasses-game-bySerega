@@ -58,7 +58,6 @@ Shader "Custom/SplitChromaticAberration"
                 half shiftedLum  = max(max(shifted.r,  shifted.g),  shifted.b);
                 half fringe      = saturate(shiftedLum - originalLum) * effectMask;
                 half3 result     = saturate(original + saturate(tint) * fringe);
-
                 return half4(result, originalSample.a);
             }
             ENDHLSL

@@ -334,7 +334,7 @@ public class HandlerMinigame : MinigameBase
 
         if (mainCamera != null && rightGameCamera != null && _lensCollider != null)
         {
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = mainCamera.ScreenPointToRay(GameInput.MousePosition);
             Vector2 uv;
             if (_lensCollider.Raycast(ray, out RaycastHit hit, 1000f))
             {
@@ -358,7 +358,7 @@ public class HandlerMinigame : MinigameBase
 
         if (rightGameCamera != null)
         {
-            Vector3 screen = Input.mousePosition;
+            Vector3 screen = GameInput.MousePosition;
             float z = rightGameCamera.WorldToScreenPoint(handleTransform.position).z;
             Vector3 world = rightGameCamera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, z));
             worldPoint = new Vector2(world.x, world.y);

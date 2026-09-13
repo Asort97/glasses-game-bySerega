@@ -229,7 +229,7 @@ public class GameStartMinigame : MinigameBase
         if (mainCamera == null || lensTransform == null || _lensMeshFilter == null)
             return false;
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(GameInput.MousePosition);
         if (_lensCollider != null && _lensCollider.Raycast(ray, out RaycastHit hit, 1000f))
         {
             uv = hit.textureCoord;

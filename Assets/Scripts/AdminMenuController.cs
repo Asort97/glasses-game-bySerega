@@ -7,6 +7,7 @@ public sealed class AdminMenuController : MonoBehaviour
     [SerializeField] private Button openButton;
     [SerializeField] private Button closeButton;
     [SerializeField] private Toggle skipInitialSequenceToggle;
+    [SerializeField] private KeyCode toggleInitialSequenceHotkey = KeyCode.F8;
 
     private void Awake()
     {
@@ -40,6 +41,12 @@ public sealed class AdminMenuController : MonoBehaviour
             skipInitialSequenceToggle.onValueChanged.RemoveListener(SetSkipInitialSequence);
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(toggleInitialSequenceHotkey))
+            ToggleInitialSequence();
+    }
+
     private void TogglePanel()
     {
         if (panel != null)
@@ -55,5 +62,12 @@ public sealed class AdminMenuController : MonoBehaviour
     private static void SetSkipInitialSequence(bool skip)
     {
         GameAdminSettings.SkipInitialIntroAndTutorial = skip;
+    }
+
+    private void ToggleInitialSequence()
+    {
+        bool skip = !GameAdminSettings.SkipInitialIntroAndTutorial;
+        GameAdminSettings.SkipInitialIntroAndTutorial = skip;
+        skipInitialSequenceToggle.SetIsOnWithoutNotify(skip);
     }
 }

@@ -438,6 +438,7 @@ GameObject:
   - component: {fileID: 22868754}
   - component: {fileID: 22868753}
   - component: {fileID: 22868752}
+  - component: {fileID: 22868755}
   m_Layer: 0
   m_Name: EventSystem
   m_TagString: Untagged
@@ -506,6 +507,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &22868755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 22868751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1511ccae7919cfc46b603b9b337fdc94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &22886988
 GameObject:
   m_ObjectHideFlags: 0
@@ -2084,7 +2097,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 172190282}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: -1, w: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.79, z: -1.57}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2092,7 +2105,7 @@ Transform:
   - {fileID: 509305503}
   - {fileID: 1697313372}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -180}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &172190284
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4548,6 +4561,7 @@ MonoBehaviour:
   openButton: {fileID: 980559382}
   closeButton: {fileID: 89872507}
   skipInitialSequenceToggle: {fileID: 28298399}
+  toggleInitialSequenceHotkey: 289
 --- !u!1 &416272148
 GameObject:
   m_ObjectHideFlags: 0
@@ -6182,6 +6196,19 @@ MonoBehaviour:
   lensCollider: {fileID: 6655408121348728894}
   buttonRenderer: {fileID: 1815607441}
   pressAnimation: {fileID: 1815607442}
+--- !u!134 &622481078
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ' (Instance)'
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &645014311
 GameObject:
   m_ObjectHideFlags: 0
@@ -7835,6 +7862,7 @@ MonoBehaviour:
   bossApproachCamera: {fileID: 820713230}
   gameStartSequenceCoordinator: {fileID: 820713225}
   crtPowerOffController: {fileID: 820713232}
+  debuffSpawner: {fileID: 960290346}
   restartDelay: 3
 --- !u!114 &820713227
 MonoBehaviour:
@@ -8105,6 +8133,7 @@ MonoBehaviour:
   completedEyesDuration: 2
   previewDuration: 2
   previewEndBlankDelay: 0.2
+  ringsWinDelay: 0.5
   miniTutorialFrameInterval: 1.2
   recoveryInputBlinkInterval: 0.1
 --- !u!1 &830644410
@@ -9495,6 +9524,9 @@ GameObject:
   m_Component:
   - component: {fileID: 960290345}
   - component: {fileID: 960290346}
+  - component: {fileID: 960290347}
+  - component: {fileID: 960290348}
+  - component: {fileID: 960290349}
   m_Layer: 13
   m_Name: DebuffWindows
   m_TagString: Untagged
@@ -9544,6 +9576,9 @@ MonoBehaviour:
   closeTime: 5
   maxConcurrentWindows: 3
   spawnOnStart: 1
+  additionalWindowDelay: 0.4
+  secondWindowLoadingVolume: 0.25
+  thirdWindowLoadingVolume: 0.07
   screenPadding: 20
   placementAttempts: 12
   definitions:
@@ -9559,12 +9594,12 @@ MonoBehaviour:
     randomWeight: 1
   - id: 2
     title: Vision PRO
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 3
     title: New horizons
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 4
@@ -9574,29 +9609,87 @@ MonoBehaviour:
     randomWeight: 1
   - id: 5
     title: Ambidextrous update
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 6
     title: Heart remake
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 7
     title: NightMode
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 8
     title: Skill tester
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 9
     title: Retrospective
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
+--- !u!114 &960290347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960290344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 557ff36084213eb4399285b6cb11ea00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debuffSpawner: {fileID: 960290346}
+  mainCameraTransform: {fileID: 330585546}
+  chromaticAberration: {fileID: 8911001305281039425, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
+  duration: 10
+  transitionDuration: 0.5
+  transitionEase: 4
+--- !u!114 &960290348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960290344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3553043f78bc77f47a432fdda01ec0cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debuffSpawner: {fileID: 960290346}
+  lensRenderers:
+  - {fileID: 4502653419961103261}
+  - {fileID: 6655408121348728893}
+  duration: 15
+  minFadeDuration: 0.25
+  maxFadeDuration: 0.8
+  minVisiblePause: 0.15
+  maxVisiblePause: 2
+  minDarkPause: 0.5
+  maxDarkPause: 1
+  finalFadeDuration: 0.4
+  minDarkness: 1
+  maxDarkness: 1
+  fullDarknessChance: 0.3
+--- !u!114 &960290349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960290344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa9946fd438cadd4eb00f9e8829b6b76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debuffSpawner: {fileID: 960290346}
 --- !u!1 &969638694
 GameObject:
   m_ObjectHideFlags: 0
@@ -16993,7 +17086,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -74.899994}
+  m_AnchoredPosition: {x: 0, y: -74.900024}
   m_SizeDelta: {x: 131.94, y: 13.53}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1648386076
@@ -21310,19 +21403,6 @@ MonoBehaviour:
   healthySprite: {fileID: 1374407352, guid: a6a58d61bdb9bdc4b9f93c2ea3596e18, type: 3}
   damagedSprite: {fileID: 455993380, guid: a6a58d61bdb9bdc4b9f93c2ea3596e18, type: 3}
   brokenSprite: {fileID: 981772196, guid: a6a58d61bdb9bdc4b9f93c2ea3596e18, type: 3}
---- !u!134 &1995881971
-PhysicsMaterial:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 2
-  m_DynamicFriction: 0.6
-  m_StaticFriction: 0.6
-  m_Bounciness: 0
-  m_FrictionCombine: 0
-  m_BounceCombine: 0
 --- !u!1 &2012555876
 GameObject:
   m_ObjectHideFlags: 0
@@ -22823,7 +22903,7 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5892900353217061921}
-  m_Material: {fileID: 1995881971}
+  m_Material: {fileID: 622481078}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0

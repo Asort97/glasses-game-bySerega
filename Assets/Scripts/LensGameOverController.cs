@@ -10,6 +10,7 @@ public class LensGameOverController : MonoBehaviour
     [SerializeField] private BossApproachCamera bossApproachCamera;
     [SerializeField] private GameStartSequenceCoordinator gameStartSequenceCoordinator;
     [SerializeField] private LensCrtPowerOffController crtPowerOffController;
+    [SerializeField] private DebuffSpawner debuffSpawner;
     [Min(0f)] [SerializeField] private float restartDelay = 3f;
 
     private LensHealthSystem _recoveringLens;
@@ -104,6 +105,7 @@ public class LensGameOverController : MonoBehaviour
         bossLevelDirector.ResetForNewRun();
         bossApproachCamera.ResetImmediately();
         gameStartSequenceCoordinator.ResetSequence();
+        debuffSpawner.ResetForNewRun();
 
         foreach (LensHealthSystem health in healthSystems)
             health.ResetHealth();
