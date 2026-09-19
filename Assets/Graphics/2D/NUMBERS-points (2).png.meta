@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b0ff2d11927406f48848f78be5818090
+guid: c5e0d8667f42c5645b48c986af3a65bd
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: NUMBERS-points_0
+      name: NUMBERS-points (2)_0
       rect:
         serializedVersion: 2
         x: 0
@@ -118,21 +118,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f7033db7ed3bfb44cb7b7b009c4f0db0
-      internalID: 806196408
+      spriteID: 07e8de10e92784544a5fc4837e0711c0
+      internalID: -538778451
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_1
+      name: NUMBERS-points (2)_1
       rect:
         serializedVersion: 2
         x: 61
@@ -140,21 +140,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 4942cf1df12090e43ada083740418568
-      internalID: 1768879304
+      spriteID: 6a1d3ca6a2ff4784992b79264ac07b5e
+      internalID: 478809901
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_2
+      name: NUMBERS-points (2)_2
       rect:
         serializedVersion: 2
         x: 122
@@ -162,21 +162,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e21f621229c9c9145a2826096d114575
-      internalID: 2099187531
+      spriteID: 22466b4333692ee40b381daf216aa93b
+      internalID: -1082535789
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_3
+      name: NUMBERS-points (2)_3
       rect:
         serializedVersion: 2
         x: 183
@@ -184,21 +184,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3d4c2aba84efa874596b27e04af47aa2
-      internalID: 1143290506
+      spriteID: 523457ee85a0e8a448e55de8ce01d53d
+      internalID: 117645313
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_4
+      name: NUMBERS-points (2)_4
       rect:
         serializedVersion: 2
         x: 244
@@ -206,21 +206,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 4aebf6769af20f94990e523925a6add9
-      internalID: -120824174
+      spriteID: e2bd4de2229a20e43aff11e2698fb3b3
+      internalID: -938812531
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_5
+      name: NUMBERS-points (2)_5
       rect:
         serializedVersion: 2
         x: 305
@@ -228,21 +228,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 427ee0c934370db46b74a0a62fef0272
-      internalID: -1615880821
+      spriteID: 4e854d42231608e4ca1f529c78c103a1
+      internalID: -225466275
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_6
+      name: NUMBERS-points (2)_6
       rect:
         serializedVersion: 2
         x: 366
@@ -250,21 +250,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 71d582faa70b8304894145489e66e8d8
-      internalID: -1012108120
+      spriteID: 7f947402d8cd00a4ab870bb68d06241e
+      internalID: -1196837316
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_7
+      name: NUMBERS-points (2)_7
       rect:
         serializedVersion: 2
         x: 427
@@ -272,21 +272,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: c4ad39281cb7b4647861f3edee7cc3e3
-      internalID: -46653816
+      spriteID: 2915cbcd26ce9d442945f6343228e63d
+      internalID: 604171409
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_8
+      name: NUMBERS-points (2)_8
       rect:
         serializedVersion: 2
         x: 488
@@ -294,21 +294,21 @@ TextureImporter:
         width: 61
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 97ddeee7826a85a41a49d1e61cbb5ca9
-      internalID: 1103062953
+      spriteID: 80b53d66e1f5def48ac2634d98278e68
+      internalID: -219827753
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: NUMBERS-points_9
+      name: NUMBERS-points (2)_9
       rect:
         serializedVersion: 2
         x: 549
@@ -316,15 +316,15 @@ TextureImporter:
         width: 41
         height: 78
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e8c2ab1f2c77466488c5b31019bbd98c
-      internalID: -1654521491
+      spriteID: ae4ef3bdbf6b94b4388501258a1c8d14
+      internalID: -299840730
       vertices: []
       indices: 
       edges: []
@@ -333,7 +333,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 2f035cbee148b2e48a9d7306d086fac4
+    spriteID: 254f06f90459ff3488b7880686752e2d
     internalID: 0
     vertices: []
     indices: 
@@ -343,16 +343,16 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      NUMBERS-points_0: 806196408
-      NUMBERS-points_1: 1768879304
-      NUMBERS-points_2: 2099187531
-      NUMBERS-points_3: 1143290506
-      NUMBERS-points_4: -120824174
-      NUMBERS-points_5: -1615880821
-      NUMBERS-points_6: -1012108120
-      NUMBERS-points_7: -46653816
-      NUMBERS-points_8: 1103062953
-      NUMBERS-points_9: -1654521491
+      NUMBERS-points (2)_0: -538778451
+      NUMBERS-points (2)_1: 478809901
+      NUMBERS-points (2)_2: -1082535789
+      NUMBERS-points (2)_3: 117645313
+      NUMBERS-points (2)_4: -938812531
+      NUMBERS-points (2)_5: -225466275
+      NUMBERS-points (2)_6: -1196837316
+      NUMBERS-points (2)_7: 604171409
+      NUMBERS-points (2)_8: -219827753
+      NUMBERS-points (2)_9: -299840730
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

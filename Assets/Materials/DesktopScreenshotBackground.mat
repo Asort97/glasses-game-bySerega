@@ -38,10 +38,19 @@ Material:
     m_Ints: []
     m_Floats:
     - _Darkness: 0
+    - _FlickerBandCount: 1
+    - _FlickerBandHorizontalDistortion: 0
+    - _FlickerBandSoftness: 0.001
+    - _FlickerBandSpeed: -3
+    - _FlickerBandTilt: -1
+    - _FlickerBandWidth: 0.01
+    - _FlickerBandingEnabled: 0
+    - _FlickerBandingStrength: 0
     - _LightEdgeSoftness: 0.45
     - _LightMultiplyStrength: 0
     - _LightNoiseStrength: 0.08
     - _Saturation: 0.5
-    m_Colors: []
+    m_Colors:
+    - _FlickerBandColor: {r: 1, g: 1, b: 1, a: 0.07}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

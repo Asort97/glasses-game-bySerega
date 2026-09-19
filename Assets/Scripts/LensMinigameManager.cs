@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class LensMinigameManager : MonoBehaviour
 {
+    public event System.Action RegularMinigameWon;
+
     [SerializeField] private MinigameBase startMinigame;
     [SerializeField] private MinigameBase[] minigames;
     [SerializeField] private GameObject     timerFillParent;
@@ -389,6 +391,9 @@ public class LensMinigameManager : MonoBehaviour
             _finishRoutine = null;
             yield break;
         }
+
+        if (isRegularWin)
+            RegularMinigameWon?.Invoke();
 
         if (isLose && health != null)
         {

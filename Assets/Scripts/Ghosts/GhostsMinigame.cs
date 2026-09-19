@@ -29,6 +29,7 @@ public class GhostsMinigame : MinigameBase
     public override void StartGame()
     {
         base.StartGame();
+        canvasCursor.SetShowOutsideRightLensWhenHidden(true);
         canvasCursor.SetCursorSpriteVisible(false);
         _ready = false;
         if (_playerContact == null) return;
@@ -40,6 +41,7 @@ public class GhostsMinigame : MinigameBase
 
     public override void StopGame()
     {
+        canvasCursor.SetShowOutsideRightLensWhenHidden(false);
         canvasCursor.SetCursorSpriteVisible(true);
         CancelInvoke(nameof(SetReady));
         _ready = false;
