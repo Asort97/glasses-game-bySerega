@@ -2,8 +2,12 @@ using UnityEngine;
 
 public sealed class GameScoreSystem : MonoBehaviour
 {
+    private const int DefaultRegularMinigameScoreDelta = 1;
+
     [SerializeField] private LensMinigameManager[] minigameManagers;
     [SerializeField] private ScoreDigitsView scoreView;
+
+    private int _regularMinigameScoreDelta = DefaultRegularMinigameScoreDelta;
 
     public int Score { get; private set; }
 
@@ -19,7 +23,7 @@ public sealed class GameScoreSystem : MonoBehaviour
 
         foreach (LensMinigameManager manager in minigameManagers)
             if (manager != null)
-                manager.RegularMinigameWon += AddPoint;
+                manager.RegularMinigameWon += ApplyRegularMinigameScore;
     }
 
     private void OnDisable()
@@ -29,12 +33,17 @@ public sealed class GameScoreSystem : MonoBehaviour
 
         foreach (LensMinigameManager manager in minigameManagers)
             if (manager != null)
-                manager.RegularMinigameWon -= AddPoint;
+                manager.RegularMinigameWon -= ApplyRegularMinigameScore;
     }
 
-    public void AddPoint()
+    public void SetRegularMinigameScoreDelta(int scoreDelta)
     {
-        Score++;
+        _regularMinigameScoreDelta = scoreDelta;
+    }
+
+    private void ApplyRegularMinigameScore()
+    {
+        Score = Mathf.Max(0, Score + _regularMinigameScoreDelta);
         scoreView.SetScore(Score);
         scoreView.PlayPointAddedAnimation();
     }
@@ -42,6 +51,7 @@ public sealed class GameScoreSystem : MonoBehaviour
     public void ResetScore()
     {
         Score = 0;
+        _regularMinigameScoreDelta = DefaultRegularMinigameScoreDelta;
         scoreView.SetScore(Score);
     }
 }

@@ -9684,6 +9684,7 @@ GameObject:
   - component: {fileID: 960290348}
   - component: {fileID: 960290349}
   - component: {fileID: 960290350}
+  - component: {fileID: 960290351}
   m_Layer: 13
   m_Name: DebuffWindows
   m_TagString: Untagged
@@ -9767,7 +9768,7 @@ MonoBehaviour:
     randomWeight: 1
   - id: 5
     title: Ambidextrous update
-    randomSpawnEnabled: 1
+    randomSpawnEnabled: 0
     canBeCancelled: 1
     randomWeight: 1
   - id: 6
@@ -9787,7 +9788,7 @@ MonoBehaviour:
     randomWeight: 1
   - id: 9
     title: Retrospective
-    randomSpawnEnabled: 0
+    randomSpawnEnabled: 1
     canBeCancelled: 1
     randomWeight: 1
 --- !u!114 &960290347
@@ -9866,6 +9867,21 @@ MonoBehaviour:
   rightLensRenderer: {fileID: 6655408121348728893}
   leftMiniTutorial: {fileID: 460718278}
   rightMiniTutorial: {fileID: 1122497132}
+  duration: 30
+--- !u!114 &960290351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960290344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df4f43c26ee6fa744af9da071c26a97d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  debuffSpawner: {fileID: 960290346}
+  gameScoreSystem: {fileID: 620839522}
   duration: 30
 --- !u!1 &969638694
 GameObject:
@@ -16747,7 +16763,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1575900439}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0.3
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0

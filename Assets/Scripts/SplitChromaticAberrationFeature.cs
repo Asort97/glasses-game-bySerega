@@ -19,6 +19,8 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
         public Color rightColor = new Color(0f, 0f, 1f);
         [Range(0.001f, 0.05f)]
         public float strength = 0.01f;
+        [Range(0.001f, 1f)]
+        public float colorTransitionWidth = 0.25f;
         public LayerMask excludedLayers = 0;
     }
 
@@ -30,6 +32,7 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
     private static readonly int PropLeftColor  = Shader.PropertyToID("_LeftColor");
     private static readonly int PropRightColor = Shader.PropertyToID("_RightColor");
     private static readonly int PropStrength   = Shader.PropertyToID("_Strength");
+    private static readonly int PropColorTransitionWidth = Shader.PropertyToID("_ColorTransitionWidth");
     private static readonly int PropMaskTexture = Shader.PropertyToID("_SplitCAMaskTexture");
     private static readonly int PropExcludeAll = Shader.PropertyToID("_ExcludeAll");
     private float _colorSwap;
@@ -65,6 +68,7 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
             PropRightColor,
             Color.Lerp(settings.rightColor, settings.leftColor, _colorSwap));
         _material.SetFloat(PropStrength,   settings.strength);
+        _material.SetFloat(PropColorTransitionWidth, settings.colorTransitionWidth);
         _material.SetFloat(PropExcludeAll, settings.excludedLayers.value == -1 ? 1f : 0f);
         _pass.ExcludedLayerMask = settings.excludedLayers;
         _pass.renderPassEvent = settings.renderPassEvent;

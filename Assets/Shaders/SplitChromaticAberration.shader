@@ -5,6 +5,7 @@ Shader "Custom/SplitChromaticAberration"
         _LeftColor  ("Left Tint",   Color) = (1, 0, 0, 1)
         _RightColor ("Right Tint",  Color) = (0, 0, 1, 1)
         _Strength   ("Strength",    Range(0.001, 0.05)) = 0.01
+        _ColorTransitionWidth ("Color Transition Width", Range(0.001, 1)) = 0.25
     }
 
     SubShader
@@ -26,6 +27,7 @@ Shader "Custom/SplitChromaticAberration"
             float4 _LeftColor;
             float4 _RightColor;
             float  _Strength;
+            float  _ColorTransitionWidth;
             float  _ExcludeAll;
             TEXTURE2D_X(_SplitCAMaskTexture);
 
@@ -33,8 +35,12 @@ Shader "Custom/SplitChromaticAberration"
             {
                 float2 uv = input.texcoord;
 
-                // Ліва половина → лівий колір, права → правий
-                float  isRight = step(0.5, uv.x);
+                // Smoothly blend the left and right tint around the screen center.
+                float halfTransition = max(_ColorTransitionWidth * 0.5, 0.0005);
+                float isRight = smoothstep(
+                    0.5 - halfTransition,
+                    0.5 + halfTransition,
+                    uv.x);
                 half3  tint    = lerp((half3)_LeftColor.rgb, (half3)_RightColor.rgb, isRight);
 
                 // Зміщення від центру екрану
