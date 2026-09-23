@@ -1,10 +1,6 @@
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Игрок прыгает между левой и правой стеной по нажатию Пробела.
-/// Привяжи к объекту player внутри Walls_minigame.
-/// </summary>
 public class WallJumper : MonoBehaviour
 {
     [SerializeField] private Transform leftWall;
@@ -43,12 +39,24 @@ public class WallJumper : MonoBehaviour
             return;
         }
 
-        // Определяем стартовую стену по близости
+        ResetWallState();
+    }
+
+    public void ResetWallState()
+    {
+        StopAllCoroutines();
+        _jumping = false;
+        if (_anim != null)
+            _anim.SetBool("jump", false);
+
+        if (leftWall == null || rightWall == null)
+            return;
+
+        // Синхронизируем логическое состояние с фактической позицией игрока.
         float distLeft  = Mathf.Abs(transform.position.x - leftWall.position.x);
         float distRight = Mathf.Abs(transform.position.x - rightWall.position.x);
         _currentWall = distLeft < distRight ? Wall.Left : Wall.Right;
 
-        // Запоминаем отступ игрока от центра текущей стены
         _offsetFromWall = _currentWall == Wall.Right
             ? Mathf.Abs(rightWall.position.x - transform.position.x)
             : Mathf.Abs(transform.position.x - leftWall.position.x);
@@ -95,8 +103,6 @@ public class WallJumper : MonoBehaviour
 
     private void OnDisable()
     {
-        // Если объект выключили в середине прыжка — сбросить состояние,
-        // чтобы при следующем включении игрок мог прыгать снова
         StopAllCoroutines();
         _jumping = false;
         if (_anim != null) _anim.SetBool("jump", false);

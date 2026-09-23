@@ -14,6 +14,7 @@ public class WallsMinigame : MinigameBase
     private Transform       _playerTransform;
     private Vector3         _playerStartPos;
     private SpriteRenderer  _playerSr;
+    private WallJumper      _wallJumper;
 
     private void Awake()
     {
@@ -29,6 +30,7 @@ public class WallsMinigame : MinigameBase
         _playerTransform = playerT;
         _playerStartPos  = playerT.position;
         _playerSr        = playerT.GetComponent<SpriteRenderer>();
+        _wallJumper      = playerT.GetComponent<WallJumper>();
 
         _playerContact = playerT.GetComponent<ContactReporter>();
         if (_playerContact == null)
@@ -43,7 +45,9 @@ public class WallsMinigame : MinigameBase
         // Сбросить позицию игрока на стартовую
         if (_playerTransform != null)
             _playerTransform.position = _playerStartPos;
-        if (_playerSr != null)
+        if (_wallJumper != null)
+            _wallJumper.ResetWallState();
+        else if (_playerSr != null)
             _playerSr.flipX = false;
 
         if (_spawner != null) _spawner.enabled = true;

@@ -166,7 +166,8 @@ public sealed class DebuffSpawner : MonoBehaviour
         DebuffWindow window = Instantiate(windowPrefab, windowParent);
         window.Initialize(definition, closeTime, HandleExpired, HandleClosed);
         Canvas.ForceUpdateCanvases();
-        PlaceWindow(window.RectTransform);
+        window.SetScreenBounds(windowParent, screenPadding);
+        PlaceWindow(window);
         _activeWindows.Add(window);
         SetCursorOverride(true);
 
@@ -233,11 +234,12 @@ public sealed class DebuffSpawner : MonoBehaviour
         return false;
     }
 
-    private void PlaceWindow(RectTransform window)
+    private void PlaceWindow(DebuffWindow window)
     {
         Rect parentRect = windowParent.rect;
-        Vector2 size = window.rect.size;
-        Vector2 pivot = window.pivot;
+        RectTransform rectTransform = window.RectTransform;
+        Vector2 size = window.VisualSize;
+        Vector2 pivot = rectTransform.pivot;
         Vector2 fallback = Vector2.zero;
 
         for (int attempt = 0; attempt < placementAttempts; attempt++)
@@ -254,12 +256,12 @@ public sealed class DebuffSpawner : MonoBehaviour
             fallback = position;
             if (!OverlapsActiveWindow(position, size, pivot))
             {
-                window.anchoredPosition = position;
+                rectTransform.anchoredPosition = position;
                 return;
             }
         }
 
-        window.anchoredPosition = fallback;
+        rectTransform.anchoredPosition = fallback;
     }
 
     private bool OverlapsActiveWindow(Vector2 position, Vector2 size, Vector2 pivot)
@@ -274,7 +276,7 @@ public sealed class DebuffSpawner : MonoBehaviour
             RectTransform rectTransform = activeWindow.RectTransform;
             Rect occupied = CreateRect(
                 rectTransform.anchoredPosition,
-                rectTransform.rect.size,
+                activeWindow.VisualSize,
                 rectTransform.pivot);
 
             if (candidate.Overlaps(occupied))
