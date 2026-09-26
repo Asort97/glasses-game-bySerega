@@ -79,11 +79,16 @@ public sealed class DebuffSpawner : MonoBehaviour
 
     public void ResetForNewRun()
     {
+        StopAndReset();
+        StartSpawning();
+    }
+
+    public void StopAndReset()
+    {
         StopSpawning();
         ClearWindows();
         _additionalWindowStacks = 0;
         RunReset?.Invoke();
-        StartSpawning();
     }
 
     public void ClearWindows()

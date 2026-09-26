@@ -29,13 +29,14 @@ public sealed class NewHorizonsDebuffController : MonoBehaviour
     private void OnEnable()
     {
         debuffSpawner.DebuffApplied += HandleDebuffApplied;
+        debuffSpawner.RunReset += StopAndRestore;
     }
 
     private void OnDisable()
     {
         debuffSpawner.DebuffApplied -= HandleDebuffApplied;
-        StopEffect();
-        ApplyState(0f, 0f);
+        debuffSpawner.RunReset -= StopAndRestore;
+        StopAndRestore();
     }
 
     private void HandleDebuffApplied(DebuffId id)
@@ -123,5 +124,11 @@ public sealed class NewHorizonsDebuffController : MonoBehaviour
 
         _transition?.Kill();
         _transition = null;
+    }
+
+    private void StopAndRestore()
+    {
+        StopEffect();
+        ApplyState(0f, 0f);
     }
 }

@@ -103,7 +103,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EffectStrength: 0
+    - _EffectStrength: 0.594
     - _EnvironmentReflections: 0
     - _FlickerBandCount: 2.38
     - _FlickerBandHorizontalDistortion: 0.04
@@ -118,11 +118,12 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _HorizontalBleed: 0.2
-    - _LineCount: 447
-    - _LineDarkness: 1
+    - _LineCount: 394
+    - _LineDarkness: 0.88
     - _LineSharpness: 0.025
-    - _LineThickness: 0.278
+    - _LineThickness: 0.58
     - _Metallic: 0
+    - _NightModeDarkness: 0
     - _NoiseStrength: 0.035
     - _OcclusionStrength: 1
     - _Parallax: 0.005

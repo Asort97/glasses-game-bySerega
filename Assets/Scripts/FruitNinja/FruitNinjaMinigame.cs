@@ -75,6 +75,7 @@ public class FruitNinjaMinigame : MinigameBase
         public GameObject gameObject;
         public Transform transform;
         public SpriteRenderer renderer;
+        public Ps1GridMovement2D movement;
         public Vector2 velocity;
         public float radius;
         public float angularVelocity;
@@ -88,6 +89,7 @@ public class FruitNinjaMinigame : MinigameBase
         public GameObject gameObject;
         public Transform transform;
         public SpriteRenderer renderer;
+        public Ps1GridMovement2D movement;
         public Vector2 velocity;
         public float angularVelocity;
         public float lifetime;
@@ -305,12 +307,17 @@ public class FruitNinjaMinigame : MinigameBase
             sr.sortingOrder = fruitSortingOrder;
         }
 
+        Vector2 velocity = new Vector2(
+            Random.Range(sideVelocityRange.x, sideVelocityRange.y),
+            Random.Range(upwardVelocityRange.x, upwardVelocityRange.y));
+
         _fruits.Add(new FruitBody
         {
             gameObject = go,
             transform = go.transform,
             renderer = sr,
-            velocity = new Vector2(Random.Range(sideVelocityRange.x, sideVelocityRange.y), Random.Range(upwardVelocityRange.x, upwardVelocityRange.y)),
+            movement = CreateGridMovement(go, velocity),
+            velocity = velocity,
             radius = radius,
             angularVelocity = Random.Range(-220f, 220f),
             color = sr != null ? sr.color : Color.white,
@@ -522,12 +529,14 @@ public class FruitNinjaMinigame : MinigameBase
             sr.sharedMaterial = material;
         }
 
+        Vector2 velocity = fruit.velocity + push * sliceSeparationVelocity;
         _pieces.Add(new SlicePiece
         {
             gameObject = go,
             transform = go.transform,
             renderer = sr,
-            velocity = fruit.velocity + push * sliceSeparationVelocity,
+            movement = CreateGridMovement(go, velocity),
+            velocity = velocity,
             angularVelocity = fruit.angularVelocity + side * Random.Range(80f, 170f),
             lifetime = 3f,
             color = fruit.color
@@ -547,7 +556,10 @@ public class FruitNinjaMinigame : MinigameBase
             }
 
             fruit.velocity += Vector2.down * gravity * dt;
-            fruit.transform.position += (Vector3)(fruit.velocity * dt);
+            if (fruit.movement != null)
+                fruit.movement.SetVelocity(fruit.velocity);
+            else
+                fruit.transform.position += (Vector3)(fruit.velocity * dt);
             fruit.transform.Rotate(0f, 0f, fruit.angularVelocity * dt);
 
             if (fruit.transform.position.y > bounds.min.y + fruit.radius)
@@ -579,7 +591,10 @@ public class FruitNinjaMinigame : MinigameBase
 
             piece.lifetime -= dt;
             piece.velocity += Vector2.down * gravity * dt;
-            piece.transform.position += (Vector3)(piece.velocity * dt);
+            if (piece.movement != null)
+                piece.movement.SetVelocity(piece.velocity);
+            else
+                piece.transform.position += (Vector3)(piece.velocity * dt);
             piece.transform.Rotate(0f, 0f, piece.angularVelocity * dt);
 
             Bounds2D bounds = GetCameraBounds();
@@ -589,6 +604,27 @@ public class FruitNinjaMinigame : MinigameBase
                 Destroy(piece.gameObject);
             }
         }
+    }
+
+    private static Ps1GridMovement2D CreateGridMovement(GameObject target, Vector2 velocity)
+    {
+        Rigidbody2D body = target.GetComponent<Rigidbody2D>();
+        if (body == null)
+            body = target.AddComponent<Rigidbody2D>();
+
+        body.bodyType = RigidbodyType2D.Kinematic;
+        body.gravityScale = 0f;
+        body.linearVelocity = Vector2.zero;
+        body.angularVelocity = 0f;
+        body.interpolation = RigidbodyInterpolation2D.None;
+
+        Ps1GridMovement2D movement = target.GetComponent<Ps1GridMovement2D>();
+        if (movement == null)
+            movement = target.AddComponent<Ps1GridMovement2D>();
+
+        movement.SetVelocity(velocity);
+        movement.ResyncToBody();
+        return movement;
     }
 
     private void ShowTrail(Vector2 from, Vector2 to)

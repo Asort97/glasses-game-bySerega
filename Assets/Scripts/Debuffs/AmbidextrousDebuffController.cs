@@ -10,6 +10,8 @@ public sealed class AmbidextrousDebuffController : MonoBehaviour
     [SerializeField] private Renderer rightLensRenderer;
     [SerializeField] private Transform leftMiniTutorial;
     [SerializeField] private Transform rightMiniTutorial;
+    [SerializeField] private Transform leftMiniTutorialSwappedPosition;
+    [SerializeField] private Transform rightMiniTutorialSwappedPosition;
 
     [Header("Timing")]
     [Min(0.1f)] [SerializeField] private float duration = 30f;
@@ -77,8 +79,8 @@ public sealed class AmbidextrousDebuffController : MonoBehaviour
         Vector2 rightLensCenter = mainCamera.WorldToScreenPoint(rightLensRenderer.bounds.center);
         GameInput.SetLensSidesSwapped(leftLensCenter, rightLensCenter);
 
-        leftMiniTutorial.localPosition = _rightTutorialPosition;
-        rightMiniTutorial.localPosition = _leftTutorialPosition;
+        leftMiniTutorial.localPosition = leftMiniTutorialSwappedPosition.localPosition;
+        rightMiniTutorial.localPosition = rightMiniTutorialSwappedPosition.localPosition;
         _swapped = true;
     }
 

@@ -4,6 +4,7 @@ using UnityEngine;
 public class LensCrtPowerOffController : MonoBehaviour
 {
     [SerializeField] private Renderer[] lensRenderers = new Renderer[0];
+    [SerializeField] private RecordCrtScaleAnimator recordScaleAnimator;
     [Min(0.01f)] [SerializeField] private float powerOffDuration = 0.5f;
     [Min(0.01f)] [SerializeField] private float powerOnDuration = 0.5f;
 
@@ -32,6 +33,9 @@ public class LensCrtPowerOffController : MonoBehaviour
         float duration = Mathf.Max(0.01f, powerOffDuration)
             / Mathf.Max(0.01f, speedMultiplier);
 
+        if (recordScaleAnimator != null)
+            recordScaleAnimator.PlayPowerOff(duration);
+
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
@@ -40,6 +44,8 @@ public class LensCrtPowerOffController : MonoBehaviour
         }
 
         SetEffect(true, 1f);
+        if (recordScaleAnimator != null)
+            recordScaleAnimator.SetCollapsed();
     }
 
     public IEnumerator PlayPowerOn()
@@ -49,6 +55,9 @@ public class LensCrtPowerOffController : MonoBehaviour
 
         float elapsed = 0f;
         float duration = Mathf.Max(0.01f, powerOnDuration);
+
+        if (recordScaleAnimator != null)
+            recordScaleAnimator.PlayPowerOn(duration);
 
         while (elapsed < duration)
         {
@@ -64,6 +73,9 @@ public class LensCrtPowerOffController : MonoBehaviour
     {
         CacheMaterials();
         SetEffect(false, 0f);
+
+        if (recordScaleAnimator != null)
+            recordScaleAnimator.SetExpanded();
     }
 
     private void CacheMaterials()

@@ -65,6 +65,9 @@ public class LensGameOverController : MonoBehaviour
 
         _gameOver = true;
 
+        if (debuffSpawner != null)
+            debuffSpawner.StopAndReset();
+
         if (healthSystems != null)
         {
             foreach (LensHealthSystem health in healthSystems)
@@ -104,9 +107,10 @@ public class LensGameOverController : MonoBehaviour
         _gameOver = false;
         _recoveringLens = null;
         bossLevelDirector.ResetForNewRun();
-        bossApproachCamera.ResetImmediately();
+        bossApproachCamera.ResetSmoothly();
         gameStartSequenceCoordinator.ResetSequence();
-        debuffSpawner.ResetForNewRun();
+        if (debuffSpawner != null)
+            debuffSpawner.StartSpawning();
         gameScoreSystem.ResetScore();
 
         foreach (LensHealthSystem health in healthSystems)
