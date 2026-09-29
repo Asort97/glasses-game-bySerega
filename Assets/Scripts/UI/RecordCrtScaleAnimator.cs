@@ -9,14 +9,19 @@ public sealed class RecordCrtScaleAnimator : MonoBehaviour
 
     private Tween _scaleTween;
 
+    private void Awake()
+    {
+        SetCollapsed();
+    }
+
     public void PlayPowerOff(float duration)
     {
-        Animate(1f, 0f, duration-0.1f, powerOffEase);
+        Animate(1f, 0f, duration, powerOffEase);
     }
 
     public void PlayPowerOn(float duration)
     {
-        Animate(0f, 1f, duration-0.1f, powerOnEase);
+        Animate(0f, 1f, duration, powerOnEase);
     }
 
     public void SetCollapsed()

@@ -44,6 +44,8 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
     private bool _skipInitialSequence;
 
+    public DesktopScreenshotBackground DesktopScreenshotBackground => desktopScreenshotBackground;
+
     private void Awake()
     {
         ResolveMissingReferences();
@@ -55,16 +57,27 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
             PrepareSkippedState();
         else
             PrepareHiddenState();
+
+        if (glassesAnimator != null && desktopScreenshotBackground != null
+            && desktopScreenshotBackground.isActiveAndEnabled)
+            glassesAnimator.gameObject.SetActive(false);
     }
 
-    private void Start()
+    private IEnumerator Start()
     {
+        // The launcher must show the captured desktop before the glasses start moving.
+        if (desktopScreenshotBackground != null && desktopScreenshotBackground.isActiveAndEnabled)
+            yield return new WaitUntil(() => desktopScreenshotBackground.IsReady);
+
+        if (glassesAnimator != null)
+            glassesAnimator.gameObject.SetActive(true);
+
         if (testMode)
-            StartCoroutine(TestModeRoutine());
+            yield return TestModeRoutine();
         else if (_skipInitialSequence)
-            StartCoroutine(SkippedBootstrapRoutine());
+            yield return SkippedBootstrapRoutine();
         else
-            StartCoroutine(BootstrapRoutine());
+            yield return BootstrapRoutine();
     }
 
     private void ResolveMissingReferences()
@@ -133,8 +146,6 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         ApplyIntroEndPose();
         SetLensColor(visibleLensColor);
 
-        if (crtPowerOffController != null)
-            crtPowerOffController.ResetEffect();
     }
 
     private IEnumerator TestModeRoutine()
@@ -208,7 +219,8 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
         SetActive(gameplayRoots, true);
         StartManagers(true);
-        yield break;
+        if (crtPowerOffController != null)
+            yield return crtPowerOffController.PlayPowerOn();
     }
 
     private IEnumerator PlayIntroAnimation()
@@ -251,7 +263,7 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         float originalSpeed = glassesAnimator.speed;
         float playbackSpeed = Mathf.Max(0.01f, exitAnimationSpeed)
             * Mathf.Max(0.01f, speedMultiplier);
-        float duration = GetClipLength(glassesAnimator, exitAnimationStateName) / playbackSpeed;
+        float duration = GetExitAnimationDuration(speedMultiplier);
         int stateHash = Animator.StringToHash("Base Layer." + exitAnimationStateName);
         glassesAnimator.speed = 0f;
 
@@ -268,6 +280,16 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
         glassesAnimator.Play(stateHash, 0, 1f);
         glassesAnimator.Update(0f);
         glassesAnimator.speed = originalSpeed;
+    }
+
+    public float GetExitAnimationDuration(float speedMultiplier)
+    {
+        if (glassesAnimator == null)
+            return 0f;
+
+        float playbackSpeed = Mathf.Max(0.01f, exitAnimationSpeed)
+            * Mathf.Max(0.01f, speedMultiplier);
+        return GetClipLength(glassesAnimator, exitAnimationStateName) / playbackSpeed;
     }
 
     private void SetLensColor(Color color)

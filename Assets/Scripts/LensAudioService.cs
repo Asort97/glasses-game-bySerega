@@ -34,9 +34,12 @@ public class LensAudioService : MonoBehaviour
         }
     }
 
-    private void Start()
+    private System.Collections.IEnumerator Start()
     {
-        PlayMusic(gameStart);
+        while (!DesktopLaunchSession.HasPresented)
+            yield return null;
+        if (!_musicInstance.isValid())
+            PlayMusic(gameStart);
     }
 
     public void SwitchToMenuTheme()

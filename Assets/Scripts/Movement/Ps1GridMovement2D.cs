@@ -14,10 +14,9 @@ public sealed class Ps1GridMovement2D : MonoBehaviour
     [SerializeField] private Vector2 directionJitterInterval = new Vector2(0.12f, 0.28f);
 
     private Rigidbody2D _body;
+    private Ps1TransformMovement2D _visualMovement;
     private Vector2 _direction;
     private Vector2 _unsnappedPosition;
-    private float _directionJitter;
-    private float _nextJitterTime;
     private bool _hasRuntimeDirection;
     private bool _paused;
 
@@ -33,7 +32,6 @@ public sealed class Ps1GridMovement2D : MonoBehaviour
     {
         EnsureInitialized();
         ResyncToBody();
-        PickDirectionJitter();
     }
 
     private void OnDisable()
@@ -51,19 +49,8 @@ public sealed class Ps1GridMovement2D : MonoBehaviour
 
         StopBody();
 
-        _nextJitterTime -= Time.fixedDeltaTime;
-        if (_nextJitterTime <= 0f)
-            PickDirectionJitter();
-
-        Vector2 movementDirection = Rotate(_direction, _directionJitter);
-        _unsnappedPosition += movementDirection * speed * Time.fixedDeltaTime;
-
-        float cellSize = Mathf.Max(0.01f, gridCellSize);
-        Vector2 snappedPosition = new Vector2(
-            Mathf.Round(_unsnappedPosition.x / cellSize) * cellSize,
-            Mathf.Round(_unsnappedPosition.y / cellSize) * cellSize);
-
-        _body.MovePosition(snappedPosition);
+        _unsnappedPosition += _direction * speed * Time.fixedDeltaTime;
+        _body.MovePosition(_unsnappedPosition);
     }
 
     public void SetDirection(Vector2 direction)
@@ -73,7 +60,6 @@ public sealed class Ps1GridMovement2D : MonoBehaviour
 
         _direction = direction.normalized;
         _hasRuntimeDirection = true;
-        PickDirectionJitter();
     }
 
     public void SetSpeed(float value)
@@ -104,12 +90,22 @@ public sealed class Ps1GridMovement2D : MonoBehaviour
     {
         EnsureInitialized();
         _unsnappedPosition = _body.position;
+        _visualMovement.Resync();
     }
 
     private void EnsureInitialized()
     {
         if (_body == null)
             _body = GetComponent<Rigidbody2D>();
+
+        if (_visualMovement == null)
+        {
+            _visualMovement = GetComponent<Ps1TransformMovement2D>();
+            if (_visualMovement == null)
+                _visualMovement = gameObject.AddComponent<Ps1TransformMovement2D>();
+
+            _visualMovement.Configure(gridCellSize, directionJitterDegrees, directionJitterInterval);
+        }
 
         _body.interpolation = RigidbodyInterpolation2D.None;
 
@@ -127,21 +123,4 @@ public sealed class Ps1GridMovement2D : MonoBehaviour
             _body.linearVelocity = Vector2.zero;
     }
 
-    private void PickDirectionJitter()
-    {
-        _directionJitter = Random.Range(-directionJitterDegrees, directionJitterDegrees);
-        float minInterval = Mathf.Max(0.02f, Mathf.Min(directionJitterInterval.x, directionJitterInterval.y));
-        float maxInterval = Mathf.Max(minInterval, Mathf.Max(directionJitterInterval.x, directionJitterInterval.y));
-        _nextJitterTime = Random.Range(minInterval, maxInterval);
-    }
-
-    private static Vector2 Rotate(Vector2 direction, float degrees)
-    {
-        float radians = degrees * Mathf.Deg2Rad;
-        float sin = Mathf.Sin(radians);
-        float cos = Mathf.Cos(radians);
-        return new Vector2(
-            direction.x * cos - direction.y * sin,
-            direction.x * sin + direction.y * cos);
-    }
 }

@@ -86,6 +86,11 @@ public class TicTacToeBoard : MonoBehaviour
         EnsureLensCollider();
     }
 
+    private void OnDisable()
+    {
+        CancelPendingAdvance();
+    }
+
     private void ResolveRefs()
     {
         if (mainCamera == null) mainCamera = Camera.main;
@@ -160,6 +165,10 @@ public class TicTacToeBoard : MonoBehaviour
         }
 
         OnCorrectClick?.Invoke(); // верная клетка — победа
+
+        if (!advanceOnClick)
+            return;
+
         // переход к следующему сценарию
         int next = _current + 1;
         if (advanceDelay > 0f)
@@ -280,6 +289,12 @@ public class TicTacToeBoard : MonoBehaviour
             }
         }
         return bestIdx;
+    }
+
+    public void CancelPendingAdvance()
+    {
+        _advancing = false;
+        CancelInvoke(nameof(AdvanceNow));
     }
 
     private Vector2 GetBoardCenter()

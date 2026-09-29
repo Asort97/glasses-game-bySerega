@@ -67,7 +67,9 @@ public class SplitChromaticAberrationFeature : ScriptableRendererFeature
         _material.SetColor(
             PropRightColor,
             Color.Lerp(settings.rightColor, settings.leftColor, _colorSwap));
-        _material.SetFloat(PropStrength,   settings.strength);
+        float startupBlend = DesktopStartupEffects.GetBlend(renderingData.cameraData.camera);
+        if (startupBlend <= 0f) return;
+        _material.SetFloat(PropStrength, settings.strength * startupBlend);
         _material.SetFloat(PropColorTransitionWidth, settings.colorTransitionWidth);
         _material.SetFloat(PropExcludeAll, settings.excludedLayers.value == -1 ? 1f : 0f);
         _pass.ExcludedLayerMask = settings.excludedLayers;

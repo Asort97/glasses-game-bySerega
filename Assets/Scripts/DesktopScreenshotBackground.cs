@@ -19,11 +19,16 @@ public class DesktopScreenshotBackground : MonoBehaviour
     [SerializeField] private float saturation = 0.5f;
     [SerializeField] private float targetLightMultiplyStrength = 1f;
     [SerializeField] private float lightAppearDelay = 0.33f;
+    [SerializeField] private bool saveDebugCapture;
+
+    public bool IsReady { get; private set; }
 
     private Texture2D _desktopTexture;
     private Material _runtimeMaterial;
     private Coroutine _darkenRoutine;
     private Coroutine _lightRoutine;
+    private DesktopLaunchSession _launchSession;
+    private IntPtr _hiddenWindow;
 
     private const int SM_CXSCREEN = 0;
     private const int SM_CYSCREEN = 1;
@@ -44,7 +49,7 @@ public class DesktopScreenshotBackground : MonoBehaviour
     private static extern IntPtr GetActiveWindow();
 
     [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
+    private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int command);
@@ -113,68 +118,94 @@ public class DesktopScreenshotBackground : MonoBehaviour
             targetCamera = GetComponent<Camera>();
             Debug.Log($"{LogPrefix} targetCamera from same GameObject: {(targetCamera != null ? targetCamera.name : "null")}");
         }
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        if (!DesktopLaunchSession.IsRequested)
+        {
+            _hiddenWindow = ResolveGameWindow();
+            if (_hiddenWindow != IntPtr.Zero)
+                ShowWindow(_hiddenWindow, SW_HIDE);
+        }
+#endif
     }
 
     private IEnumerator Start()
     {
         Debug.Log($"{LogPrefix} Start. platform={Application.platform}, editor={Application.isEditor}, forceFullscreen={forceFullscreen}, currentFullscreen={Screen.fullScreenMode}, resolution={Screen.width}x{Screen.height}");
-        MakeProcessDpiAware();
+        if (!DesktopLaunchSession.IsRequested)
+            MakeProcessDpiAware();
 
-        if (forceFullscreen)
+        Texture2D screenshot = null;
+        if (DesktopLaunchSession.IsRequested)
         {
-            Screen.fullScreenMode = FullScreenMode.Windowed;
-            Debug.Log($"{LogPrefix} Requested Windowed before capture.");
-        }
-
-        yield return null;
-        yield return new WaitForSecondsRealtime(0.1f);
-
-        IntPtr gameWindow = IntPtr.Zero;
-#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-        gameWindow = ResolveGameWindow();
-        Debug.Log($"{LogPrefix} Resolved game window handle: 0x{gameWindow.ToInt64():X}");
-        if (gameWindow != IntPtr.Zero)
-        {
-            ShowWindow(gameWindow, SW_HIDE);
-            Debug.Log($"{LogPrefix} Hidden game window before capture.");
+            try
+            {
+                _launchSession = new DesktopLaunchSession();
+                screenshot = _launchSession.LoadCapture();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                Application.Quit(1);
+                yield break;
+            }
         }
         else
         {
-            Debug.LogWarning($"{LogPrefix} Game window handle is zero, cannot hide window.");
-        }
-
-        yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, captureDelayAfterHide));
-#endif
-
-        Texture2D screenshot = CaptureDesktopPixels();
-        Debug.Log($"{LogPrefix} Capture result: {(screenshot != null ? $"{screenshot.width}x{screenshot.height}" : "null")}");
-
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-        if (gameWindow != IntPtr.Zero)
-        {
-            ShowWindow(gameWindow, SW_SHOW);
-            Debug.Log($"{LogPrefix} Shown game window after capture.");
-        }
-
-        yield return null;
+            yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, captureDelayAfterHide));
 #endif
+            screenshot = CaptureDesktopPixels();
+        }
 
         ApplyTexture(screenshot);
-        StartDarken();
-
-        if (forceFullscreen)
+        if (_runtimeMaterial == null && _launchSession != null)
         {
-            if (screenshot != null)
-            {
-                Screen.SetResolution(screenshot.width, screenshot.height, FullScreenMode.FullScreenWindow);
-                Debug.Log($"{LogPrefix} Requested FullScreenWindow after capture with screenshot resolution {screenshot.width}x{screenshot.height}.");
-            }
-            else
-            {
-                Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
-                Debug.Log($"{LogPrefix} Requested FullScreenWindow after capture without screenshot resolution.");
-            }
+            Application.Quit(1);
+            yield break;
         }
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        // The launcher already chose the desktop resolution and borderless window mode.
+        if (forceFullscreen && _launchSession == null && screenshot != null)
+            Screen.SetResolution(screenshot.width, screenshot.height, FullScreenMode.FullScreenWindow);
+#endif
+
+        // Wait for rendering, not an arbitrary loading delay. Intro remains paused.
+#if UNITY_EDITOR
+        // EndOfFrame can suspend indefinitely when the editor displays Scene instead of Game.
+        yield return null;
+#else
+        yield return new WaitForEndOfFrame();
+        yield return new WaitForEndOfFrame();
+#endif
+        if (_launchSession != null)
+        {
+            _launchSession.SignalFrameReady();
+            float deadline = Time.realtimeSinceStartup + 30f;
+            while (!_launchSession.PollPresented())
+            {
+                if (Time.realtimeSinceStartup >= deadline)
+                {
+                    Debug.LogError($"{LogPrefix} Launcher did not present the ready frame.");
+                    Application.Quit(1);
+                    yield break;
+                }
+                yield return null;
+            }
+            _launchSession.Dispose();
+            _launchSession = null;
+        }
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        else if (_hiddenWindow != IntPtr.Zero)
+        {
+            ShowWindow(_hiddenWindow, SW_SHOW);
+            _hiddenWindow = IntPtr.Zero;
+        }
+#endif
+        IsReady = true;
+        StartDarken();
+        Debug.Log($"{LogPrefix} First background frame presented; intro may start.");
     }
 
     private void LateUpdate()
@@ -184,6 +215,7 @@ public class DesktopScreenshotBackground : MonoBehaviour
 
     private void OnDestroy()
     {
+        _launchSession?.Dispose();
         if (_desktopTexture != null)
         {
             Debug.Log($"{LogPrefix} Destroy desktop texture.");
@@ -234,7 +266,7 @@ public class DesktopScreenshotBackground : MonoBehaviour
         if (_runtimeMaterial.HasProperty("_BaseColor"))
             _runtimeMaterial.SetColor("_BaseColor", Color.white);
 
-        SetSaturation(saturation);
+        SetSaturation(1f);
         SetDarkness(0f);
         SetLightMultiplyStrength(0f);
 
@@ -250,6 +282,48 @@ public class DesktopScreenshotBackground : MonoBehaviour
         StartLightMultiply();
     }
 
+    public void CancelLightMultiplyTransition()
+    {
+        if (_lightRoutine == null)
+            return;
+
+        StopCoroutine(_lightRoutine);
+        _lightRoutine = null;
+    }
+
+    public void CancelDarknessTransition()
+    {
+        if (_darkenRoutine == null)
+            return;
+
+        StopCoroutine(_darkenRoutine);
+        _darkenRoutine = null;
+    }
+
+    public float GetLightMultiplyStrength()
+    {
+        if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_LightMultiplyStrength"))
+            return 0f;
+
+        return _runtimeMaterial.GetFloat("_LightMultiplyStrength");
+    }
+
+    public float GetDarkness()
+    {
+        if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_Darkness"))
+            return 0f;
+
+        return _runtimeMaterial.GetFloat("_Darkness");
+    }
+
+    public float GetSaturation()
+    {
+        if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_Saturation"))
+            return 1f;
+
+        return _runtimeMaterial.GetFloat("_Saturation");
+    }
+
     private static IntPtr ResolveGameWindow()
     {
         IntPtr processWindow = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
@@ -259,15 +333,10 @@ public class DesktopScreenshotBackground : MonoBehaviour
             return processWindow;
         }
 
-        IntPtr gameWindow = GetForegroundWindow();
-        if (gameWindow != IntPtr.Zero)
-        {
-            Debug.Log($"{LogPrefix} Window handle from foreground window.");
-            return gameWindow;
-        }
-
-        Debug.Log($"{LogPrefix} Window handle from active window.");
-        return GetActiveWindow();
+        IntPtr gameWindow = GetActiveWindow();
+        GetWindowThreadProcessId(gameWindow, out uint processId);
+        return processId == (uint)System.Diagnostics.Process.GetCurrentProcess().Id
+            ? gameWindow : IntPtr.Zero;
     }
 
     private Texture2D CaptureDesktopPixels()
@@ -316,6 +385,7 @@ public class DesktopScreenshotBackground : MonoBehaviour
                 }
             };
 
+            SelectObject(memoryDc, oldBitmap);
             int copiedLines = GetDIBits(memoryDc, bitmap, 0, (uint)height, pixels, ref info, 0);
             Debug.Log($"{LogPrefix} GetDIBits copiedLines={copiedLines}");
             if (copiedLines == 0)
@@ -328,9 +398,10 @@ public class DesktopScreenshotBackground : MonoBehaviour
             texture.LoadRawTextureData(pixels);
             texture.Apply(false, false);
             texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
+            texture.filterMode = FilterMode.Point;
             Debug.Log($"{LogPrefix} Texture created and applied.");
-            SaveDebugCapture(texture);
+            if (saveDebugCapture && (Application.isEditor || Debug.isDebugBuild))
+                SaveDebugCapture(texture);
             return texture;
         }
         finally
@@ -471,10 +542,12 @@ public class DesktopScreenshotBackground : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
             SetDarkness(Mathf.Lerp(0f, targetDarkness, t));
+            SetSaturation(Mathf.Lerp(1f, saturation, t));
             yield return null;
         }
 
         SetDarkness(targetDarkness);
+        SetSaturation(saturation);
         _darkenRoutine = null;
         Debug.Log($"{LogPrefix} Darken complete. darkness={targetDarkness}");
     }
@@ -489,7 +562,7 @@ public class DesktopScreenshotBackground : MonoBehaviour
         Debug.Log($"{LogPrefix} Light multiply complete. strength={targetLightMultiplyStrength}");
     }
 
-    private void SetDarkness(float value)
+    public void SetDarkness(float value)
     {
         if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_Darkness"))
             return;
@@ -497,7 +570,7 @@ public class DesktopScreenshotBackground : MonoBehaviour
         _runtimeMaterial.SetFloat("_Darkness", Mathf.Clamp01(value));
     }
 
-    private void SetSaturation(float value)
+    public void SetSaturation(float value)
     {
         if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_Saturation"))
             return;
@@ -505,7 +578,7 @@ public class DesktopScreenshotBackground : MonoBehaviour
         _runtimeMaterial.SetFloat("_Saturation", Mathf.Clamp01(value));
     }
 
-    private void SetLightMultiplyStrength(float value)
+    public void SetLightMultiplyStrength(float value)
     {
         if (_runtimeMaterial == null || !_runtimeMaterial.HasProperty("_LightMultiplyStrength"))
             return;

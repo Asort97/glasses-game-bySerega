@@ -16,7 +16,9 @@ public class LensCrtPowerOffController : MonoBehaviour
     private void Awake()
     {
         CacheMaterials();
-        ResetEffect();
+        SetEffect(false, 0f);
+        if (recordScaleAnimator != null)
+            recordScaleAnimator.SetCollapsed();
     }
 
     public IEnumerator PlayPowerOff()
@@ -30,8 +32,7 @@ public class LensCrtPowerOffController : MonoBehaviour
         SetEffect(true, 0f);
 
         float elapsed = 0f;
-        float duration = Mathf.Max(0.01f, powerOffDuration)
-            / Mathf.Max(0.01f, speedMultiplier);
+        float duration = GetPowerOffDuration(speedMultiplier);
 
         if (recordScaleAnimator != null)
             recordScaleAnimator.PlayPowerOff(duration);
@@ -46,6 +47,12 @@ public class LensCrtPowerOffController : MonoBehaviour
         SetEffect(true, 1f);
         if (recordScaleAnimator != null)
             recordScaleAnimator.SetCollapsed();
+    }
+
+    public float GetPowerOffDuration(float speedMultiplier)
+    {
+        return Mathf.Max(0.01f, powerOffDuration)
+            / Mathf.Max(0.01f, speedMultiplier);
     }
 
     public IEnumerator PlayPowerOn()

@@ -15,8 +15,6 @@ public sealed class GameQuitController : MonoBehaviour
     [SerializeField] private float holdDuration = 5f;
     [FormerlySerializedAs("flickerReleaseDuration")]
     [Min(0.01f)] [SerializeField] private float holdReleaseDuration = 0.5f;
-    [Range(0f, 1f)] [SerializeField] private float targetFlickerStrength = 0.5f;
-
     [Header("Quick Exit During Gameplay")]
     [Min(1)] [SerializeField] private int quickExitPressCount = 5;
     [Min(0.1f)] [SerializeField] private float quickExitPressWindow = 2f;
@@ -31,17 +29,22 @@ public sealed class GameQuitController : MonoBehaviour
 
     private Material[] _lensMaterials;
     private float _heldTime;
-    private float _currentFlickerStrength;
     private float _escapeSpamStartTime = float.NegativeInfinity;
     private float _previousTimeScale = 1f;
     private int _escapePressCount;
     private bool _quitting;
     private bool _exitAnimationFinished;
+    private bool _powerOffFinished;
+    private bool _rageQuitVisualsFinished;
+    private RageQuitVisualController _rageQuitVisuals;
 
     private void Awake()
     {
         CacheMaterials();
         SetGameStartExitFill(0f);
+        _rageQuitVisuals = new RageQuitVisualController(
+            lensManagers,
+            introBootstrap != null ? introBootstrap.DesktopScreenshotBackground : null);
     }
 
     private void Update()
@@ -130,17 +133,16 @@ public sealed class GameQuitController : MonoBehaviour
         return hasRegularMinigame;
     }
 
-    private IEnumerator QuitRoutine(float speedMultiplier, bool rampFlicker)
+    private IEnumerator QuitRoutine(float speedMultiplier, bool immediatePowerOff)
     {
         _quitting = true;
         _previousTimeScale = Time.timeScale;
         Time.timeScale = 0f;
 
-        if (rampFlicker)
+        if (immediatePowerOff)
         {
-            float rampDuration = Mathf.Max(0.01f, holdDuration)
-                / Mathf.Max(1f, speedMultiplier);
-            yield return RampFlicker(rampDuration);
+            SetFlicker(false, 0f);
+            SetGameStartExitFill(0f);
         }
         else
         {
@@ -151,6 +153,24 @@ public sealed class GameQuitController : MonoBehaviour
         if (introBootstrap != null)
             StartCoroutine(PlayExitAnimation(speedMultiplier));
 
+        if (immediatePowerOff)
+        {
+            PlayPowerOffSounds();
+
+            _rageQuitVisualsFinished = false;
+            StartCoroutine(PlayRageQuitVisuals(GetExitDuration(speedMultiplier)));
+
+            _powerOffFinished = crtPowerOffController == null;
+            if (crtPowerOffController != null)
+                StartCoroutine(PlayPowerOff(speedMultiplier));
+
+            while (!_exitAnimationFinished || !_powerOffFinished || !_rageQuitVisualsFinished)
+                yield return null;
+
+            QuitApplication();
+            yield break;
+        }
+
         float leadTime = Mathf.Max(0f, exitAnimationLeadTime)
             / Mathf.Max(1f, speedMultiplier);
         float leadElapsed = 0f;
@@ -160,8 +180,7 @@ public sealed class GameQuitController : MonoBehaviour
             yield return null;
         }
 
-        LensAudioService.Instance.PlayTVon(false, -1f);
-        LensAudioService.Instance.PlayTVon(false, 1f);
+        PlayPowerOffSounds();
 
         if (crtPowerOffController != null)
             yield return crtPowerOffController.PlayPowerOff(speedMultiplier);
@@ -172,26 +191,40 @@ public sealed class GameQuitController : MonoBehaviour
         QuitApplication();
     }
 
+    private float GetExitDuration(float speedMultiplier)
+    {
+        float glassesDuration = introBootstrap != null
+            ? introBootstrap.GetExitAnimationDuration(speedMultiplier)
+            : 0f;
+        float lensDuration = crtPowerOffController != null
+            ? crtPowerOffController.GetPowerOffDuration(speedMultiplier)
+            : 0f;
+
+        return Mathf.Max(glassesDuration, lensDuration);
+    }
+
     private IEnumerator PlayExitAnimation(float speedMultiplier)
     {
         yield return introBootstrap.PlayExitAnimation(speedMultiplier);
         _exitAnimationFinished = true;
     }
 
-    private IEnumerator RampFlicker(float duration)
+    private IEnumerator PlayPowerOff(float speedMultiplier)
     {
-        float startStrength = _currentFlickerStrength;
-        float elapsed = 0f;
+        yield return crtPowerOffController.PlayPowerOff(speedMultiplier);
+        _powerOffFinished = true;
+    }
 
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            float progress = Mathf.Clamp01(elapsed / duration);
-            SetFlicker(true, Mathf.Lerp(startStrength, targetFlickerStrength, progress));
-            yield return null;
-        }
+    private IEnumerator PlayRageQuitVisuals(float duration)
+    {
+        yield return _rageQuitVisuals.Play(duration);
+        _rageQuitVisualsFinished = true;
+    }
 
-        SetFlicker(true, targetFlickerStrength);
+    private static void PlayPowerOffSounds()
+    {
+        LensAudioService.Instance.PlayTVon(false, -1f);
+        LensAudioService.Instance.PlayTVon(false, 1f);
     }
 
     private void ReleaseHold()
@@ -229,8 +262,6 @@ public sealed class GameQuitController : MonoBehaviour
 
     private void SetFlicker(bool enabled, float strength)
     {
-        _currentFlickerStrength = enabled ? strength : 0f;
-
         if (_lensMaterials == null)
             CacheMaterials();
 

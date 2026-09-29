@@ -731,7 +731,7 @@ public class LensMinigameManager : MonoBehaviour
         }
     }
 
-    private void HideTutorial()
+    public void HideTutorial()
     {
         if (tutorialController != null)
             tutorialController.Hide();
