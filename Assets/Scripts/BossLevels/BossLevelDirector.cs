@@ -35,11 +35,24 @@ public class BossLevelDirector : MonoBehaviour
 
     public event Action<int, int> BossProgressChanged;
     public event Action BossFailed;
+    public event Action BossWon;
 
     public int PassedMinigames => _passedMinigames;
     public int MinigamesPerBoss => minigamesPerBoss;
+    public int CompletedRounds { get; private set; }
 
     public void ResetForNewRun()
+    {
+        StopForGameOver();
+        _passedMinigames = 0;
+        CompletedRounds = 0;
+        _bossQueued = false;
+        _leftWaiting = false;
+        _rightWaiting = false;
+        BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
+    }
+
+    public void StopForGameOver()
     {
         if (_startRoutine != null)
             StopCoroutine(_startRoutine);
@@ -56,11 +69,6 @@ public class BossLevelDirector : MonoBehaviour
         _startRoutine = null;
         _resumeRoutine = null;
         _activeBoss = null;
-        _passedMinigames = 0;
-        _bossQueued = false;
-        _leftWaiting = false;
-        _rightWaiting = false;
-        BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
     }
 
     public bool NotifyRegularMinigamePassed(LensMinigameManager manager)
@@ -222,6 +230,8 @@ public class BossLevelDirector : MonoBehaviour
         if (!StopBoss(boss))
             return;
 
+        CompletedRounds++;
+        BossWon?.Invoke();
         _passedMinigames = 0;
         BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);
         leftHealth.RestoreHeartsAfterBoss();

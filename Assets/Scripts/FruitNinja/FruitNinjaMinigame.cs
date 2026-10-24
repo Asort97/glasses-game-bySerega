@@ -107,6 +107,7 @@ public class FruitNinjaMinigame : MinigameBase
     public override void StartGame()
     {
         StopGame();
+        ClearRuntimeObjects();
 
         ResolveRefs();
         EnsureLensCollider();
@@ -127,7 +128,6 @@ public class FruitNinjaMinigame : MinigameBase
         _hasPreviousPoint = false;
         _hasActiveSliceStroke = false;
         HideTrail();
-        ClearRuntimeObjects();
         base.StopGame();
     }
 

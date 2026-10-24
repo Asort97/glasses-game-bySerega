@@ -33,6 +33,16 @@ public sealed class GameQuitController : MonoBehaviour
     private float _previousTimeScale = 1f;
     private int _escapePressCount;
     private bool _quitting;
+    private bool _inputBlocked;
+    public bool IsQuitting => _quitting;
+
+    public void SetInputBlocked(bool blocked)
+    {
+        _inputBlocked = blocked;
+        ResetEscapeSpam();
+        _heldTime = 0f;
+        SetGameStartExitFill(0f);
+    }
     private bool _exitAnimationFinished;
     private bool _powerOffFinished;
     private bool _rageQuitVisualsFinished;
@@ -49,7 +59,7 @@ public sealed class GameQuitController : MonoBehaviour
 
     private void Update()
     {
-        if (_quitting)
+        if (_quitting || _inputBlocked)
             return;
 
         if (CanQuitFromGameStart())

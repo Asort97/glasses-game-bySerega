@@ -55,6 +55,14 @@ public class LensCrtPowerOffController : MonoBehaviour
             / Mathf.Max(0.01f, speedMultiplier);
     }
 
+    public void SetPoweredOff()
+    {
+        CacheMaterials();
+        SetEffect(true, 1f);
+        if (recordScaleAnimator != null)
+            recordScaleAnimator.SetCollapsed();
+    }
+
     public IEnumerator PlayPowerOn()
     {
         CacheMaterials();

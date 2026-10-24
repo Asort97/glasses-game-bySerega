@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class GameStartSequenceCoordinator : MonoBehaviour
 {
+    public event System.Action InitialSequenceCompleted;
     [Header("Participants")]
     [SerializeField] private GameStartMinigame[] gameStarts;
     [SerializeField] private int requiredActivations = 2;
@@ -195,6 +196,7 @@ public class GameStartSequenceCoordinator : MonoBehaviour
             if (gameStart != null)
                 gameStart.CompleteFromStartSequence();
         }
+        InitialSequenceCompleted?.Invoke();
     }
 
     private void HideGameStartsForPostStartSequence()

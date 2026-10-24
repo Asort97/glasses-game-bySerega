@@ -34,7 +34,6 @@ public sealed class TutorGameMinigame : MinigameBase
     public override void StopGame()
     {
         _isRunning = false;
-        ResetSequence();
         base.StopGame();
     }
 
@@ -107,6 +106,8 @@ public sealed class TutorGameMinigame : MinigameBase
 
     private void CacheInitialColors()
     {
+        if (_initialColors != null && orderedTargets != null && _initialColors.Length == orderedTargets.Length)
+            return;
         if (orderedTargets == null)
         {
             _initialColors = null;

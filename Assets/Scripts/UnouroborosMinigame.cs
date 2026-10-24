@@ -73,14 +73,6 @@ public class UnouroborosMinigame : MinigameBase
         _unouroborosRunning = false;
         _queuedDirection = Vector2Int.zero;
         _hasMoved = false;
-        ClearRuntimeSegments();
-
-        if (snakeSegmentTemplate != null)
-        {
-            snakeSegmentTemplate.gameObject.SetActive(true);
-            snakeSegmentTemplate.localPosition = startLocalPosition;
-        }
-
         base.StopGame();
     }
 

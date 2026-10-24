@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class LensMinigameManager : MonoBehaviour
 {
     public event System.Action RegularMinigameWon;
+    public event System.Action RegularSequenceStarted;
 
     [SerializeField] private MinigameBase startMinigame;
     [SerializeField] private MinigameBase[] minigames;
@@ -168,6 +169,8 @@ public class LensMinigameManager : MonoBehaviour
         HideConfiguredMinigames();
 
         BuildOrder(-1);
+        if (skipInitialSequence)
+            RegularSequenceStarted?.Invoke();
         QueueNext();
     }
 
@@ -372,12 +375,13 @@ public class LensMinigameManager : MonoBehaviour
             if (isLose)
                 PlayGlassesLossRocking();
 
-            PlayResultSound(isLose);
+            var winPresentation = finished as IMinigameWinPresentation;
+            PlayResultSound(isLose, winPresentation);
             ShowResultTitle(isLose ? loseResultSprite : winResultSprite);
             if (isLose)
                 yield return ShakeLoseResult(finished);
             else
-                yield return BlinkResultTitle();
+                yield return BlinkResultTitle(winPresentation != null ? winPresentation.WinResultSpeed : 1f);
             HidePreviewTitle();
         }
 
@@ -498,7 +502,7 @@ public class LensMinigameManager : MonoBehaviour
         SetTimerVisible(false);
     }
 
-    private IEnumerator BlinkResultTitle()
+    private IEnumerator BlinkResultTitle(float speed = 1f)
     {
         float elapsed = 0f;
         float blinkElapsed = 0f;
@@ -507,8 +511,9 @@ public class LensMinigameManager : MonoBehaviour
 
         while (elapsed < resultDuration)
         {
-            elapsed += Time.deltaTime;
-            blinkElapsed += Time.deltaTime;
+            float deltaTime = Time.deltaTime * Mathf.Max(0.01f, speed);
+            elapsed += deltaTime;
+            blinkElapsed += deltaTime;
 
             if (blinkElapsed >= interval)
             {
@@ -592,13 +597,15 @@ public class LensMinigameManager : MonoBehaviour
         gameCameraTransform.localRotation = _gameCameraStartLocalRotation;
     }
 
-    private void PlayResultSound(bool isLose)
+    private void PlayResultSound(bool isLose, IMinigameWinPresentation winPresentation = null)
     {
         if (audioService == null)
             return;
 
         if (isLose)
             audioService.PlayLose();
+        else if (winPresentation != null)
+            audioService.PlayWin(winPresentation.WinSoundSpeed, winPresentation.WinSoundPitch, winPresentation.WinSoundReverb);
         else
             audioService.PlayWin();
     }

@@ -186,7 +186,22 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
             yield return crtPowerOffController.PlayPowerOn();
     }
 
-    private IEnumerator BootstrapRoutine()
+    public void PrepareIntroReplay()
+    {
+        StopAllCoroutines();
+        PrepareHiddenState();
+        if (crtPowerOffController != null)
+            crtPowerOffController.SetPoweredOff();
+        if (glassesAnimator != null)
+            glassesAnimator.gameObject.SetActive(false);
+    }
+
+    public IEnumerator ReplayIntro()
+    {
+        yield return BootstrapRoutine(GameAdminSettings.SkipInitialIntroAndTutorial);
+    }
+
+    private IEnumerator BootstrapRoutine(bool skipInitialSequence = false)
     {
         yield return PlayIntroAnimation();
 
@@ -201,7 +216,7 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
             desktopScreenshotBackground.PlayLensEnabledEffect();
 
         SetActive(gameplayRoots, true);
-        StartManagers();
+        StartManagers(skipInitialSequence);
 
         if (crtPowerOffController != null)
             yield return crtPowerOffController.PlayPowerOn();
@@ -347,9 +362,9 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
             manager.enabled = true;
             if (skipInitialSequence)
-                manager.BeginWithoutInitialSequence(true);
+                manager.RestartFromRegularMinigames();
             else
-                manager.Begin(true);
+                manager.RestartFromGameStart();
         }
     }
 

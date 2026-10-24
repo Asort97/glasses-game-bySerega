@@ -18,6 +18,8 @@ public class LensGameOverController : MonoBehaviour
     private bool _gameOver;
 
     public bool IsGameOver => _gameOver;
+    public event System.Action GameOverStarted;
+    public event System.Action RunReset;
 
     private void Awake()
     {
@@ -60,10 +62,17 @@ public class LensGameOverController : MonoBehaviour
 
     public void TriggerGameOver()
     {
+        if (TryBeginGameOver())
+            StartCoroutine(RestartAfterDelay());
+    }
+
+    public bool TryBeginGameOver()
+    {
         if (_gameOver)
-            return;
+            return false;
 
         _gameOver = true;
+        GameOverStarted?.Invoke();
 
         if (debuffSpawner != null)
             debuffSpawner.StopAndReset();
@@ -87,10 +96,10 @@ public class LensGameOverController : MonoBehaviour
             }
         }
 
-        StartCoroutine(RestartAfterDelay());
+        return true;
     }
 
-    private IEnumerator RestartAfterDelay()
+    public IEnumerator ShutdownLenses()
     {
         if (crtPowerOffController != null)
             yield return crtPowerOffController.PlayPowerOff();
@@ -102,19 +111,38 @@ public class LensGameOverController : MonoBehaviour
                     health.CompleteGameOverShutdown();
         }
 
-        yield return new WaitForSecondsRealtime(restartDelay);
+    }
 
+    public void ResetRunState(bool replayIntro = false)
+    {
         _gameOver = false;
         _recoveringLens = null;
         bossLevelDirector.ResetForNewRun();
-        bossApproachCamera.ResetSmoothly();
+        if (replayIntro)
+            bossApproachCamera.ResetImmediately();
+        else
+            bossApproachCamera.ResetSmoothly();
         gameStartSequenceCoordinator.ResetSequence();
         if (debuffSpawner != null)
             debuffSpawner.StartSpawning();
         gameScoreSystem.ResetScore();
 
         foreach (LensHealthSystem health in healthSystems)
-            health.ResetHealth();
+        {
+            if (replayIntro)
+                health.RestoreFullHealthAfterTutorial();
+            else
+                health.ResetHealth();
+        }
+
+        RunReset?.Invoke();
+    }
+
+    private IEnumerator RestartAfterDelay()
+    {
+        yield return ShutdownLenses();
+        yield return new WaitForSecondsRealtime(restartDelay);
+        ResetRunState();
 
         bool skipInitialSequence = GameAdminSettings.SkipInitialIntroAndTutorial;
         foreach (LensMinigameManager manager in minigameManagers)

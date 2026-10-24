@@ -29,7 +29,7 @@ public abstract class MinigameBase : MonoBehaviour
         Progress = 1f;
     }
 
-    /// <summary>Останавливает мини-игру. LensMinigameManager вызывает перед SetActive(false).</summary>
+    /// <summary>Stops gameplay but preserves the result background. Reset visuals in StartGame.</summary>
     public virtual void StopGame()
     {
         _running = false;
