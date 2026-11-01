@@ -3,12 +3,17 @@ using UnityEngine;
 public sealed class SimonMinigame : MinigameBase
 {
     private enum Direction { Up, Right, Down, Left }
-    private enum Phase { Stopped, InitialPause, Showing, Gap, Input }
+    private enum Phase { Stopped, InitialPause, BracketPause, Showing, Gap, Input }
 
     [Header("Visuals")]
     [SerializeField] private Transform crossHighlight;
+    [SerializeField] private GameObject cross;
+    [SerializeField] private GameObject leftBracket;
+    [SerializeField] private GameObject rightBracket;
     [Header("Sequence Timing")]
-    [Min(0f)] [SerializeField] private float initialPause = 0.35f;
+    [Min(0f)] [SerializeField] private float initialPause = 0.5f;
+    [Min(0f)] [SerializeField] private float bracketPause = 0.5f;
+    [Min(0f)] [SerializeField] private float bracketHideDelay = 0.5f;
     [Min(0.01f)] [SerializeField] private float directionDuration = 0.5f;
     [Min(0.01f)] [SerializeField] private float gapDuration = 0.25f;
     [Min(0.01f)] [SerializeField] private float inputHighlightDuration = 0.15f;
@@ -21,18 +26,20 @@ public sealed class SimonMinigame : MinigameBase
     private float _phaseRemaining;
     private float _inputElapsed;
     private float _highlightRemaining;
+    private float _bracketHideRemaining;
 
     public override void StartGame()
     {
         StopGame();
         HideHighlight();
         base.StartGame();
-        if (crossHighlight == null)
+        if (!crossHighlight || !cross || !leftBracket || !rightBracket)
         {
-            Debug.LogError("Assign Cross Highlight on SimonMinigame.", this);
+            Debug.LogError("Assign Cross, Cross Highlight and both brackets on SimonMinigame.", this);
             Finish(false);
             return;
         }
+        cross.SetActive(true);
 
         for (int i = 0; i < _choices.Length; i++)
             _choices[i] = (Direction)i;
@@ -54,6 +61,8 @@ public sealed class SimonMinigame : MinigameBase
     public override void StopGame()
     {
         _phase = Phase.Stopped;
+        _bracketHideRemaining = 0f;
+        SetBracketsVisible(false);
         base.StopGame();
     }
 
@@ -61,9 +70,8 @@ public sealed class SimonMinigame : MinigameBase
 
     protected override void Update()
     {
-        bool wasAcceptingInput = _phase == Phase.Input;
         Advance(Time.deltaTime);
-        if (!wasAcceptingInput || _phase != Phase.Input || Time.deltaTime <= 0f)
+        if (_phase != Phase.Input || Time.deltaTime <= 0f)
             return;
 
         int count = 0;
@@ -85,6 +93,11 @@ public sealed class SimonMinigame : MinigameBase
         if (_phase == Phase.Stopped || deltaTime <= 0f) return;
         if (_phase == Phase.Input)
         {
+            if (_bracketHideRemaining > 0f)
+            {
+                _bracketHideRemaining -= deltaTime;
+                if (_bracketHideRemaining <= 0f) SetBracketsVisible(false);
+            }
             _inputElapsed += deltaTime;
             Progress = 1f - Mathf.Clamp01(_inputElapsed / Mathf.Max(0.01f, surviveTime));
             _highlightRemaining -= deltaTime;
@@ -95,12 +108,27 @@ public sealed class SimonMinigame : MinigameBase
 
         _phaseRemaining -= deltaTime;
         if (_phaseRemaining > 0f) return;
-        if (_phase == Phase.Showing)
+        if (_phase == Phase.InitialPause)
+        {
+            SetBracketsVisible(true);
+            _phase = Phase.BracketPause;
+            _phaseRemaining = Mathf.Max(0f, bracketPause);
+        }
+        else if (_phase == Phase.Showing)
         {
             HideHighlight();
             _shownIndex++;
-            _phase = Phase.Gap;
-            _phaseRemaining = Mathf.Max(0.01f, gapDuration);
+            if (_shownIndex == _sequence.Length)
+            {
+                _phase = Phase.Input;
+                _bracketHideRemaining = Mathf.Max(0f, bracketHideDelay);
+                if (_bracketHideRemaining <= 0f) SetBracketsVisible(false);
+            }
+            else
+            {
+                _phase = Phase.Gap;
+                _phaseRemaining = Mathf.Max(0.01f, gapDuration);
+            }
         }
         else if (_shownIndex < _sequence.Length)
         {
@@ -110,6 +138,7 @@ public sealed class SimonMinigame : MinigameBase
         }
         else
         {
+            SetBracketsVisible(false);
             _phase = Phase.Input;
         }
     }
@@ -146,6 +175,12 @@ public sealed class SimonMinigame : MinigameBase
     private void HideHighlight()
     {
         if (crossHighlight != null) crossHighlight.gameObject.SetActive(false);
+    }
+
+    private void SetBracketsVisible(bool visible)
+    {
+        if (leftBracket) leftBracket.SetActive(visible);
+        if (rightBracket) rightBracket.SetActive(visible);
     }
 
     private void Finish(bool won)
