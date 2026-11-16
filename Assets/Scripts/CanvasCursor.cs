@@ -21,6 +21,7 @@ public class CanvasCursor : MonoBehaviour
     private bool _spriteVisible = true;
     private bool _uiInteractionOverride;
     private bool _showOutsideRightLensWhenHidden;
+    private bool _inactiveAppearance;
 
     private void Awake()
     {
@@ -36,8 +37,18 @@ public class CanvasCursor : MonoBehaviour
 
     public void SetUiInteractionOverride(bool active)
     {
+        if (_uiInteractionOverride != active)
+            _appearanceInitialized = false;
         _uiInteractionOverride = active;
-        ApplyCursorVisibility();
+        UpdateCursorAppearance();
+    }
+
+    public void SetInactiveAppearance(bool inactive)
+    {
+        if (_inactiveAppearance == inactive) return;
+        _inactiveAppearance = inactive;
+        _appearanceInitialized = false;
+        UpdateCursorAppearance();
     }
 
     public void SetShowOutsideRightLensWhenHidden(bool active)
@@ -91,8 +102,9 @@ public class CanvasCursor : MonoBehaviour
         {
             _appearanceInitialized = true;
             _isOverRightLens = isOverRightLens;
-            cursorImage.sprite = _isOverRightLens ? rightLensCursor : defaultCursor;
-            cursorImage.color = _isOverRightLens ? rightLensColor : defaultCursorColor;
+            bool activeAppearance = _isOverRightLens && (!_inactiveAppearance || _uiInteractionOverride);
+            cursorImage.sprite = activeAppearance ? rightLensCursor : defaultCursor;
+            cursorImage.color = activeAppearance ? rightLensColor : defaultCursorColor;
         }
 
         ApplyCursorVisibility();
