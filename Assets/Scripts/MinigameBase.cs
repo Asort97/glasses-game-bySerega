@@ -6,6 +6,9 @@ using UnityEngine;
 /// </summary>
 public abstract class MinigameBase : MonoBehaviour
 {
+    public enum Objective { Survival, Completion }
+    [SerializeField] private Objective objective;
+    public Objective Goal => objective;
     [SerializeField] protected float surviveTime = 10f;
     [SerializeField] private Sprite previewTitleSprite;
     [SerializeField] private MiniTutorialType tutorialType;

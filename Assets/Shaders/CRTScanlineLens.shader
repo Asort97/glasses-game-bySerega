@@ -14,6 +14,8 @@ Shader "Custom/CRT Scanline Lens"
         _HorizontalBleed("Horizontal Bleed", Range(0, 1)) = 0.2
         _TVNoiseStrength("TV Noise Strength", Range(0, 1)) = 0
         _NightModeDarkness("Night Mode Darkness", Range(0, 1)) = 0
+        _SkipWhiteOpacity("Skip White Opacity", Range(0, 1)) = 0
+        _SkipWhiteDrain("Skip White Drain", Range(0, 1)) = 0
 
         [Toggle] _CRTPowerOffEnabled("CRT Power Off Enabled", Float) = 0
         _CRTPowerOffProgress("CRT Power Off Progress", Range(0, 1)) = 0
@@ -89,6 +91,8 @@ Shader "Custom/CRT Scanline Lens"
                 half _HorizontalBleed;
                 half _TVNoiseStrength;
                 half _NightModeDarkness;
+                half _SkipWhiteOpacity;
+                half _SkipWhiteDrain;
                 half _CRTPowerOffEnabled;
                 half _CRTPowerOffProgress;
                 half _FlickerBandingEnabled;
@@ -349,6 +353,21 @@ Shader "Custom/CRT Scanline Lens"
                 return 1.0h - blackLine * _LineDarkness * strength;
             }
 
+            half3 ApplySkipWhite(float2 uv, half3 color)
+            {
+                if (_SkipWhiteOpacity <= 0.0001h || _SkipWhiteDrain >= 0.9999h)
+                    return color;
+                half mask = 1.0h;
+                if (_SkipWhiteDrain > 0.0001h)
+                {
+                    float wave = sin(uv.x * 16.0 + _Time.y * 3.0) * 0.025
+                        * sin(_SkipWhiteDrain * 3.14159265);
+                    float surface = 1.0 - _SkipWhiteDrain + wave;
+                    mask = 1.0h - smoothstep(surface - 0.003, surface + 0.003, uv.y);
+                }
+                return lerp(color, half3(1, 1, 1), saturate(_SkipWhiteOpacity) * mask);
+            }
+
             half4 Frag(Varyings input) : SV_Target
             {
                 half strength = saturate(_EffectStrength);
@@ -356,7 +375,7 @@ Shader "Custom/CRT Scanline Lens"
 
                 if (displayUv.x < 0.0 || displayUv.x > 1.0 || displayUv.y < 0.0 || displayUv.y > 1.0)
                 {
-                    return half4(0.0, 0.0, 0.0, 1.0);
+                    return half4(ApplyCrtPowerOff(input.uv, ApplySkipWhite(input.uv, half3(0, 0, 0))), 1.0);
                 }
 
                 float2 bandUv = GetCrtPowerOffSampleUv(displayUv);
@@ -373,6 +392,7 @@ Shader "Custom/CRT Scanline Lens"
                 color = ApplyTVNoise(uv, color);
                 color = ApplyFlickerBanding(bandUv, color);
                 color *= 1.0h - saturate(_NightModeDarkness);
+                color = ApplySkipWhite(input.uv, color);
                 color = ApplyCrtPowerOff(displayUv, color);
 
                 return half4(saturate(color), baseColor.a);

@@ -8,6 +8,15 @@ public class LensMinigameManager : MonoBehaviour
 {
     public event System.Action RegularMinigameWon;
     public event System.Action RegularSequenceStarted;
+    public event System.Action<MinigameBase> RegularWinResolved;
+    public event System.Action TransitionInterrupted;
+    public event System.Action RunRestarted;
+
+    private bool _gameInProgress;
+    private bool _skipPending;
+    public MinigameBase ActiveMinigame => _gameInProgress ? _current : null;
+    public bool CanSkip => IsPlayingRegularMinigame && _gameInProgress && !_skipPending && !_waitingForBoss;
+    public bool ShowSkipRewards => enabled && _started && !_paused && !_waitingForBoss && !IsPlayingGameStart;
 
     [SerializeField] private MinigameBase startMinigame;
     [SerializeField] private MinigameBase[] minigames;
@@ -94,6 +103,8 @@ public class LensMinigameManager : MonoBehaviour
         if (minigame == null)
             return;
 
+        InterruptSkip();
+
         _testMode = true;
         _testMinigame = minigame;
         _paused = false;
@@ -142,6 +153,11 @@ public class LensMinigameManager : MonoBehaviour
 
     private void BeginInternal(bool restart, bool skipInitialSequence)
     {
+        if (restart)
+        {
+            InterruptSkip();
+            RunRestarted?.Invoke();
+        }
         ResolvePreviewTitle();
         HidePreviewTitle();
         HideTutorial();
@@ -190,6 +206,8 @@ public class LensMinigameManager : MonoBehaviour
         _paused = paused;
         if (paused)
         {
+            InterruptSkip();
+            _gameInProgress = false;
             StopSwitchRoutine();
             HidePreviewTitle();
             HideTutorial();
@@ -326,6 +344,7 @@ public class LensMinigameManager : MonoBehaviour
         ResetGameCamera();
         _pausedMinigame = null;
         _current = next;
+        _gameInProgress = true;
         _current.OnWin  += HandleWin;
         _current.OnLose += HandleLose;
         _current.gameObject.SetActive(true);
@@ -338,7 +357,10 @@ public class LensMinigameManager : MonoBehaviour
 
     private void FinishGame(bool isLose)
     {
+        _gameInProgress = false;
         MinigameBase finished = _current;
+        if (!isLose && finished != null && !IsStartMinigame(finished) && !_testMode)
+            RegularWinResolved?.Invoke(finished);
         Detach(finished);
         HideTutorial();
         bool showResult = !IsStartMinigame(finished);
@@ -422,6 +444,8 @@ public class LensMinigameManager : MonoBehaviour
 
     public void EnterBossWait(Sprite waitingPreview)
     {
+        InterruptSkip();
+        _gameInProgress = false;
         _waitingForBoss = true;
         HidePreviewTitle();
         HideTutorial();
@@ -653,6 +677,7 @@ public class LensMinigameManager : MonoBehaviour
 
     private void HideAllMinigames()
     {
+        _gameInProgress = false;
         HideConfiguredMinigames();
         _current = null;
     }
@@ -830,5 +855,49 @@ public class LensMinigameManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    public bool TryBeginSkip()
+    {
+        if (!CanSkip) return false;
+        StopSwitchRoutine();
+        _skipPending = true;
+        _gameInProgress = false;
+        Detach(_current);
+        _current.StopGame();
+        HideTutorial();
+        SetTimerVisible(false);
+        return true;
+    }
+
+    public void ClearSkippedGame()
+    {
+        if (!_skipPending || _paused || !enabled) return;
+        HideAllMinigames();
+        HidePreviewTitle();
+        HideLossPresentation();
+        _pausedMinigame = null;
+        ResetGameCamera();
+    }
+
+    public void CompleteSkip()
+    {
+        if (!_skipPending || _paused || !enabled) return;
+        _skipPending = false;
+        HideAllMinigames();
+        ResetGameCamera();
+        MinigameBase next = _testMode ? _testMinigame : PickNext();
+        if (next != null) StartMinigame(next);
+    }
+
+    private void InterruptSkip()
+    {
+        _skipPending = false;
+        TransitionInterrupted?.Invoke();
+    }
+
+    private void OnDisable()
+    {
+        InterruptSkip();
     }
 }
