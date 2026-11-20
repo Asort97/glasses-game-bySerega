@@ -26,6 +26,7 @@ public sealed class SnakeMinigame : MinigameBase
     private readonly List<SpriteRenderer> _fruits = new List<SpriteRenderer>();
     private SnakeBoard _board;
     private bool _playing;
+    private bool _coasting;
     private float _elapsed;
     private float _stepTimer;
 
@@ -41,6 +42,7 @@ public sealed class SnakeMinigame : MinigameBase
         _board = new SnakeBoard(new Vector2Int(Mathf.Max(3, gridSize.x), Mathf.Max(3, gridSize.y)),
             Mathf.Clamp(initialLength, 1, Mathf.Max(3, gridSize.x) - 1), Mathf.Max(1, fruitCount));
         _elapsed = _stepTimer = 0f;
+        _coasting = false;
         _playing = true;
         head.gameObject.SetActive(true);
         fruitTemplate.gameObject.SetActive(false);
@@ -53,10 +55,15 @@ public sealed class SnakeMinigame : MinigameBase
         base.StopGame();
     }
 
-    private void OnDisable() => StopGame();
+    private void OnDisable()
+    {
+        _coasting = false;
+        StopGame();
+    }
 
     protected override void Update()
     {
+        if (_coasting && Time.deltaTime > 0f) Coast(Time.deltaTime);
         if (!_playing || Time.deltaTime <= 0f) return;
         if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) _board.QueueDirection(Vector2Int.up);
         else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) _board.QueueDirection(Vector2Int.down);
@@ -79,6 +86,18 @@ public sealed class SnakeMinigame : MinigameBase
             RenderBoard();
             if (result == SnakeBoard.StepResult.Collision) Finish(false);
             else if (result == SnakeBoard.StepResult.Won) Finish(true);
+        }
+    }
+
+    // Keeps the snake moving on the result screen after a win.
+    private void Coast(float deltaTime)
+    {
+        _stepTimer += deltaTime;
+        while (_stepTimer >= Mathf.Max(0.01f, stepInterval))
+        {
+            _stepTimer -= Mathf.Max(0.01f, stepInterval);
+            _board.Step();
+            RenderBoard();
         }
     }
 
@@ -144,6 +163,12 @@ public sealed class SnakeMinigame : MinigameBase
     private void Finish(bool won)
     {
         StopGame();
-        if (won) RaiseWin(); else RaiseLose();
+        if (won)
+        {
+            _board.IgnoreCollisions = true;
+            _coasting = true;
+            RaiseWin();
+        }
+        else RaiseLose();
     }
 }

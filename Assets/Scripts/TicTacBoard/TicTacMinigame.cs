@@ -1,15 +1,20 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
 /// Мини-игра крестики-нолики (правая линза).
-/// Победа — пройти все сценарии до истечения времени.
+/// Победа — кликнуть выигрышную клетку до истечения времени.
 /// Поражение — неверный клик или время вышло.
 /// </summary>
 public class TicTacMinigame : MinigameBase
 {
+    [Tooltip("Pause after the click before the win or lose result.")]
+    [Min(0f)] [SerializeField] private float resultDelay = 0.5f;
+
     private TicTacToeBoard _board;
     private float _elapsed;
     private bool _timerRunning;
+    private Coroutine _resultRoutine;
 
     private void Awake()
     {
@@ -20,27 +25,31 @@ public class TicTacMinigame : MinigameBase
 
     public override void StartGame()
     {
+        StopGame();
         _elapsed = 0f;
         _timerRunning = true;
         Progress = 1f;
 
-        _board?.ResetGame();
-        if (_board != null)
-        {
-            _board.OnCorrectClick += HandleWin;
-            _board.OnWrongClick  += HandleLose;
-        }
+        if (_board == null) return;
+        _board.ResetGame();
+        _board.OnCorrectClick += HandleWin;
+        _board.OnWrongClick  += HandleLose;
     }
 
     public override void StopGame()
     {
         _timerRunning = false;
+        if (_resultRoutine != null) StopCoroutine(_resultRoutine);
+        _resultRoutine = null;
         if (_board != null)
         {
+            _board.Lock();
             _board.OnCorrectClick -= HandleWin;
             _board.OnWrongClick  -= HandleLose;
         }
     }
+
+    private void OnDisable() => StopGame();
 
     protected override void Update()
     {
@@ -49,11 +58,26 @@ public class TicTacMinigame : MinigameBase
         Progress = 1f - Mathf.Clamp01(_elapsed / surviveTime);
         if (_elapsed >= surviveTime)
         {
-            _timerRunning = false;
+            StopGame();
             RaiseLose(); // время вышло — проигрыш
         }
     }
 
-    private void HandleWin()  { _timerRunning = false; RaiseWin(); }
-    private void HandleLose() { _timerRunning = false; RaiseLose(); }
+    private void HandleWin()  => BeginResult(true);
+    private void HandleLose() => BeginResult(false);
+
+    private void BeginResult(bool won)
+    {
+        if (!_timerRunning) return;
+        _timerRunning = false;
+        _resultRoutine = StartCoroutine(ResultAfterDelay(won));
+    }
+
+    private IEnumerator ResultAfterDelay(bool won)
+    {
+        if (resultDelay > 0f) yield return new WaitForSeconds(resultDelay);
+        _resultRoutine = null;
+        StopGame();
+        if (won) RaiseWin(); else RaiseLose();
+    }
 }

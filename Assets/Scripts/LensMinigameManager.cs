@@ -15,7 +15,11 @@ public class LensMinigameManager : MonoBehaviour
     private bool _gameInProgress;
     private bool _skipPending;
     public MinigameBase ActiveMinigame => _gameInProgress ? _current : null;
-    public bool CanSkip => IsPlayingRegularMinigame && _gameInProgress && !_skipPending && !_waitingForBoss;
+    public bool CanSkip => !_skipPending && !_waitingForBoss
+        && ((IsPlayingRegularMinigame && _gameInProgress) || IsPreviewingRegularMinigame);
+    // The skip is already allowed while the next game's title is shown.
+    private MinigameBase _previewGame;
+    private bool IsPreviewingRegularMinigame => enabled && !_paused && _previewGame != null;
     public bool ShowSkipRewards => enabled && _started && !_paused && !_waitingForBoss && !_adminBlank && !IsPlayingGameStart;
 
     public IEnumerable<MinigameBase> RegularPool
@@ -29,6 +33,7 @@ public class LensMinigameManager : MonoBehaviour
     }
 
     public bool HasAdminOverride => _adminOff || _adminGame;
+    public bool IsAdminBlank => _adminBlank;
     private bool _adminOff, _regularCycle, _adminBlank;
     private MinigameBase _adminGame;
     [SerializeField] private Camera lensGameCamera;
@@ -333,11 +338,13 @@ public class LensMinigameManager : MonoBehaviour
             if (_paused) yield break;
 
             ShowPreviewTitle(next.PreviewTitleSprite);
+            if (_regularCycle) _previewGame = next;
             ShowTutorial(next.TutorialType);
             PlayPreviewClick(_nextPreviewClickDelay);
             _nextPreviewClickDelay = 0f;
             yield return new WaitForSeconds(previewDuration);
 
+            _previewGame = null;
             HidePreviewTitle();
 
             if (previewEndBlankDelay > 0f)
@@ -703,6 +710,7 @@ public class LensMinigameManager : MonoBehaviour
 
     private void StopSwitchRoutine()
     {
+        _previewGame = null;
         if (_switchRoutine != null)
         {
             StopCoroutine(_switchRoutine);
@@ -927,6 +935,14 @@ public class LensMinigameManager : MonoBehaviour
     public bool TryBeginSkip()
     {
         if (!CanSkip) return false;
+        if (_previewGame != null && !_gameInProgress)
+        {
+            StopSwitchRoutine();
+            _skipPending = true;
+            HideTutorial();
+            SetTimerVisible(false);
+            return true;
+        }
         StopSwitchRoutine();
         _skipPending = true;
         _gameInProgress = false;

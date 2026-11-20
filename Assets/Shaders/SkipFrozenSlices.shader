@@ -13,6 +13,8 @@ Shader "Hidden/Skip Frozen Slices"
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
             float _StartX, _Seed;
+            // How much blue is removed where the shifted red channel is missing (cyan -> green fringe).
+            float _GreenFringe;
 
             float hash(float x) { return frac(sin(x * 12.9898) * 43758.5453); }
 
@@ -31,7 +33,9 @@ Shader "Hidden/Skip Frozen Slices"
                 float lo = _StartX + margin, hi = _StartX + 0.5 - margin;
                 half red = tex2D(_MainTex, float2(clamp(x + rgb, lo, hi), uv.y)).r;
                 half3 color = tex2D(_MainTex, float2(clamp(x, lo, hi), uv.y)).rgb;
+                half missingRed = saturate(color.g - red);
                 color.r = red;
+                color.b = saturate(color.b - missingRed * (_GreenFringe > 0 ? _GreenFringe : 0.85));
                 // Yellow hues (40-80 degrees): blue is lowest, and red and green are close.
                 half peak = max(color.r, color.g);
                 half chroma = peak - color.b;

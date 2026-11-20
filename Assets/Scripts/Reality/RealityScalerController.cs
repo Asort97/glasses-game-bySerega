@@ -53,7 +53,9 @@ public sealed class RealityScalerController : MonoBehaviour
 
     private void Update()
     {
-        if (!IsRunning || Time.timeScale <= 0f || quitController.IsQuitting)
+        if (IsRunning) SetVisible(!GameAdminSettings.GlobalTimerDisabled);
+        if (!IsRunning || Time.timeScale <= 0f || quitController.IsQuitting
+            || GameAdminSettings.GlobalTimerDisabled || AllLensesOff())
             return;
 
         SetProgress(Progress + Time.unscaledDeltaTime / Mathf.Max(0.1f, fillDuration));
@@ -64,12 +66,20 @@ public sealed class RealityScalerController : MonoBehaviour
         LimitReached?.Invoke();
     }
 
+    // Both lenses turned off from the admin console act as a pause.
+    private bool AllLensesOff()
+    {
+        foreach (var manager in minigameManagers)
+            if (manager && !manager.IsAdminBlank) return false;
+        return minigameManagers.Length > 0;
+    }
+
     private void BeginRun()
     {
         if (IsRunning || gameOver.IsGameOver)
             return;
         IsRunning = true;
-        SetVisible(true);
+        SetVisible(!GameAdminSettings.GlobalTimerDisabled);
     }
 
     private void OnMinigameWon() => Reduce(minigameReduction);

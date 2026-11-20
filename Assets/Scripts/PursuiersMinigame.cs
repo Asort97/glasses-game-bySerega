@@ -49,35 +49,26 @@ public sealed class PursuiersMinigame : MinigameBase
             enemy.PlayerHit += HandleHit;
             _enemies.Add(enemy);
         }
-        Vector2 spawnHalfSize = arenaSize * 0.5f + Vector2.one * spawnDistance;
-        float perimeter = 4f * (spawnHalfSize.x + spawnHalfSize.y);
-        float spacing = perimeter / Mathf.Max(1, enemyCount);
-        float startOffset = Random.Range(0f, perimeter);
+        // Equal distance from the player and from each other: a star with a random rotation.
+        Vector2 center = transform.InverseTransformPoint(player.Body.position);
+        float radius = arenaSize.x * 0.5f + spawnDistance;
+        float startAngle = Random.Range(0f, Mathf.PI * 2f);
         for (int i = 0; i < _enemies.Count; i++)
         {
             if (i >= enemyCount) { _enemies[i].gameObject.SetActive(false); continue; }
-            float distance = startOffset + (i + Random.Range(-0.2f, 0.2f)) * spacing;
-            Vector2 position = PerimeterPosition(distance, spawnHalfSize);
+            float angle = startAngle + i * Mathf.PI * 2f / enemyCount;
+            Vector2 position = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
             _enemies[i].Begin(transform.TransformPoint(position), player.Body,
                 playerCollider, acceleration, maxSpeed, transform, arenaSize, walls);
         }
+        // Pursuers pass through each other.
+        for (int i = 0; i < enemyCount && i < _enemies.Count; i++)
+            for (int j = i + 1; j < enemyCount && j < _enemies.Count; j++)
+                _enemies[i].IgnoreCollisionWith(_enemies[j]);
         _elapsed = 0f;
         _shownSeconds = -1;
         _playing = true;
         UpdateCountdown();
-    }
-
-    private static Vector2 PerimeterPosition(float distance, Vector2 halfSize)
-    {
-        float width = halfSize.x * 2f;
-        float height = halfSize.y * 2f;
-        distance = Mathf.Repeat(distance, 2f * (width + height));
-        if (distance < width) return new Vector2(-halfSize.x + distance, halfSize.y);
-        distance -= width;
-        if (distance < height) return new Vector2(halfSize.x, halfSize.y - distance);
-        distance -= height;
-        if (distance < width) return new Vector2(halfSize.x - distance, -halfSize.y);
-        return new Vector2(-halfSize.x, -halfSize.y + distance - width);
     }
 
     public override void StopGame()

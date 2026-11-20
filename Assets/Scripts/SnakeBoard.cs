@@ -8,7 +8,12 @@ public sealed class SnakeBoard
     public readonly List<Vector2Int> Cells = new List<Vector2Int>();
     public readonly List<Vector2Int> Fruits = new List<Vector2Int>();
     public Vector2Int Direction { get; private set; }
+    /// <summary>After a win the snake keeps crawling through itself and fruit.</summary>
+    public bool IgnoreCollisions { get; set; }
     private Vector2Int _queued;
+    // Buffered turns are applied one per step so quick double taps are not lost.
+    private readonly Queue<Vector2Int> _pending = new Queue<Vector2Int>();
+    private const int MaxPendingTurns = 3;
     private readonly Vector2Int _size;
 
     public SnakeBoard(Vector2Int size, int length, int fruitCount)
@@ -23,7 +28,7 @@ public sealed class SnakeBoard
 
     private void SpawnFruits(int count)
     {
-        count = Mathf.Clamp(count, 0, ((_size.x + 1) / 2) * ((_size.y + 1) / 2));
+        count = Mathf.Clamp(count, 0, ((_size.x + 1) / 2) * (_size.y / 2));
         var available = new List<Vector2Int>();
         for (int attempt = 0; attempt <= 32; attempt++)
         {
@@ -31,7 +36,8 @@ public sealed class SnakeBoard
             available.Clear();
             // A spaced fallback guarantees the requested count on crowded boards.
             int stride = attempt == 32 ? 2 : 1;
-            for (int y = 0; y < _size.y; y += stride)
+            // The top row never holds fruit.
+            for (int y = 0; y < _size.y - 1; y += stride)
                 for (int x = 0; x < _size.x; x += stride)
                     available.Add(new Vector2Int(x, y));
             while (Fruits.Count < count && available.Count > 0)
@@ -47,19 +53,25 @@ public sealed class SnakeBoard
 
     public void QueueDirection(Vector2Int direction)
     {
-        if (Mathf.Abs(direction.x) + Mathf.Abs(direction.y) != 1 || direction == -Direction)
+        if (Mathf.Abs(direction.x) + Mathf.Abs(direction.y) != 1 || _pending.Count >= MaxPendingTurns)
             return;
-        _queued = direction;
+        // Validate against the last buffered turn, not the current heading.
+        Vector2Int last = Direction;
+        foreach (Vector2Int turn in _pending) last = turn;
+        if (direction == last || direction == -last) return;
+        _pending.Enqueue(direction);
     }
 
     public StepResult Step()
     {
         // The first step always enters from the right.
         if (Cells[0].x >= _size.x) _queued = Vector2Int.left;
+        else _queued = _pending.Count > 0 ? _pending.Dequeue() : Direction;
         Vector2Int next = Cells[0] + _queued;
         next = new Vector2Int(Wrap(next.x, _size.x), Wrap(next.y, _size.y));
         bool eats = Fruits.Contains(next);
-        int collisionCount = Cells.Count - (eats ? 0 : 1);
+        if (IgnoreCollisions) eats = false;
+        int collisionCount = IgnoreCollisions ? 0 : Cells.Count - (eats ? 0 : 1);
         for (int i = 0; i < collisionCount; i++)
             if (Cells[i] == next) return StepResult.Collision;
         Direction = _queued;

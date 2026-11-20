@@ -52,12 +52,13 @@ public sealed class LensSkipController : MonoBehaviour
             TryUse();
         MinigameBase game = manager.ActiveMinigame;
         view.Refresh(_charges, manager.ShowSkipRewards,
-            manager.CanSkip && game && game.Goal == MinigameBase.Objective.Completion, remainingThreshold);
+            manager.CanSkip && game && game.Goal == MinigameBase.Objective.Completion && !game.HidePerfectMarker,
+            game ? game.GetRemainingThreshold(remainingThreshold) : remainingThreshold);
     }
 
     private void OnWin(MinigameBase game)
     {
-        if (game.Goal == MinigameBase.Objective.Completion && game.Progress > remainingThreshold)
+        if (game.Goal == MinigameBase.Objective.Completion && game.Progress > game.GetRemainingThreshold(remainingThreshold))
             _charges = Mathf.Min(requiredCharges, _charges + 1);
     }
 

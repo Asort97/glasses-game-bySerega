@@ -13,6 +13,10 @@ public sealed class AdminMenuController : MonoBehaviour
     [SerializeField] private Dropdown leftPicker;
     [SerializeField] private Dropdown rightPicker;
     [SerializeField] private Toggle skipInitialSequenceToggle;
+    [SerializeField] private Toggle infiniteLivesToggle;
+    [SerializeField] private Toggle globalTimerOffToggle;
+    [SerializeField] private Dropdown debuffPicker;
+    [SerializeField] private DebuffSpawner debuffSpawner;
     [SerializeField] private KeyCode toggleInitialSequenceHotkey = KeyCode.F8;
 
     private void Awake()
@@ -22,11 +26,9 @@ public sealed class AdminMenuController : MonoBehaviour
 
         if (leftManager && rightManager && leftPicker && rightPicker)
         {
-            var left = new AdminLensPicker(leftManager, leftPicker, "Left");
-            var right = new AdminLensPicker(rightManager, rightPicker, "Right");
-            if (left.IsOff && right.IsOff) right.UseRandom();
-            left.TurnedOff += () => { if (right.IsOff) right.UseRandom(); };
-            right.TurnedOff += () => { if (left.IsOff) left.UseRandom(); };
+            // Both lenses may be off at once: that pauses the run.
+            new AdminLensPicker(leftManager, leftPicker, "Left");
+            new AdminLensPicker(rightManager, rightPicker, "Right");
         }
         else Debug.LogError("Admin lens selectors or minigame managers are not assigned.", this);
 
@@ -35,7 +37,44 @@ public sealed class AdminMenuController : MonoBehaviour
             skipInitialSequenceToggle.SetIsOnWithoutNotify(
                 GameAdminSettings.SkipInitialIntroAndTutorial);
         }
+        if (infiniteLivesToggle) infiniteLivesToggle.SetIsOnWithoutNotify(GameAdminSettings.InfiniteLives);
+        if (globalTimerOffToggle) globalTimerOffToggle.SetIsOnWithoutNotify(GameAdminSettings.GlobalTimerDisabled);
+        SetupDebuffPicker();
     }
+
+    private readonly System.Collections.Generic.List<string> _debuffValues = new System.Collections.Generic.List<string>();
+
+    private void SetupDebuffPicker()
+    {
+        if (!debuffPicker) return;
+        _debuffValues.Clear();
+        var labels = new System.Collections.Generic.List<string>();
+        _debuffValues.Add(""); labels.Add("Debuffs: Random");
+        _debuffValues.Add(GameAdminSettings.DebuffsOff); labels.Add("Debuffs: Off");
+        foreach (DebuffId id in System.Enum.GetValues(typeof(DebuffId)))
+        {
+            if (debuffSpawner && System.Array.FindIndex(debuffSpawner.Definitions ?? new DebuffDefinition[0],
+                    d => d != null && d.Id == id) < 0) continue;
+            _debuffValues.Add(id.ToString());
+            labels.Add("Debuff: " + id);
+        }
+        debuffPicker.ClearOptions();
+        debuffPicker.AddOptions(labels);
+        int index = _debuffValues.IndexOf(GameAdminSettings.DebuffSelection);
+        debuffPicker.SetValueWithoutNotify(Mathf.Max(0, index));
+        debuffPicker.RefreshShownValue();
+    }
+
+    private void SelectDebuff(int index)
+    {
+        if (index < 0 || index >= _debuffValues.Count) return;
+        GameAdminSettings.DebuffSelection = _debuffValues[index];
+        if (_debuffValues[index] == GameAdminSettings.DebuffsOff && debuffSpawner)
+            debuffSpawner.ClearWindows();
+    }
+
+    private static void SetInfiniteLives(bool value) => GameAdminSettings.InfiniteLives = value;
+    private static void SetGlobalTimerOff(bool value) => GameAdminSettings.GlobalTimerDisabled = value;
 
     private void OnEnable()
     {
@@ -46,6 +85,9 @@ public sealed class AdminMenuController : MonoBehaviour
             closeButton.onClick.AddListener(ClosePanel);
         if (skipInitialSequenceToggle != null)
             skipInitialSequenceToggle.onValueChanged.AddListener(SetSkipInitialSequence);
+        if (infiniteLivesToggle) infiniteLivesToggle.onValueChanged.AddListener(SetInfiniteLives);
+        if (globalTimerOffToggle) globalTimerOffToggle.onValueChanged.AddListener(SetGlobalTimerOff);
+        if (debuffPicker) debuffPicker.onValueChanged.AddListener(SelectDebuff);
     }
 
     private void OnDisable()
@@ -57,6 +99,9 @@ public sealed class AdminMenuController : MonoBehaviour
             closeButton.onClick.RemoveListener(ClosePanel);
         if (skipInitialSequenceToggle != null)
             skipInitialSequenceToggle.onValueChanged.RemoveListener(SetSkipInitialSequence);
+        if (infiniteLivesToggle) infiniteLivesToggle.onValueChanged.RemoveListener(SetInfiniteLives);
+        if (globalTimerOffToggle) globalTimerOffToggle.onValueChanged.RemoveListener(SetGlobalTimerOff);
+        if (debuffPicker) debuffPicker.onValueChanged.RemoveListener(SelectDebuff);
     }
 
     private void Update()

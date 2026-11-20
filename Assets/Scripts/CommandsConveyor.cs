@@ -17,6 +17,9 @@ public sealed class CommandsConveyor : MonoBehaviour
     [Min(0.01f)] [SerializeField] private float shiftDuration = 0.18f;
     [SerializeField] private float arrowUpAngle = 90f;
     [SerializeField] private Color movingColor = new Color(0.4f, 0.4f, 0.4f, 1f);
+    [Header("Wrong Command")]
+    [Min(0f)] [SerializeField] private float wrongShakeDuration = 0.3f;
+    [Min(0f)] [SerializeField] private float wrongShakeStrength = 0.15f;
 
     private sealed class Note
     {
@@ -78,6 +81,8 @@ public sealed class CommandsConveyor : MonoBehaviour
         SpriteRenderer current = _active[_nextCommandIndex].Renderer;
         SetSymbol(current, command);
         current.color = Color.white;
+        current.transform.DOKill(true);
+        current.transform.DOShakePosition(wrongShakeDuration, wrongShakeStrength, 25, 90f, false, true);
     }
 
     public void ClearNotes()
@@ -133,6 +138,7 @@ public sealed class CommandsConveyor : MonoBehaviour
     private void Recycle(int index)
     {
         Note note = _active[index];
+        note.Renderer.transform.DOKill();
         note.Renderer.gameObject.SetActive(false);
         _active.RemoveAt(index);
         _pool.Push(note);

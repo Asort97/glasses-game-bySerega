@@ -16,6 +16,12 @@ public sealed class FallNBallMinigame : MinigameBase
     [Tooltip("Lose when the entire ball falls below this local Y coordinate.")]
     [SerializeField] private float bottomY = -3.2f;
 
+    [Header("Click")]
+    [Tooltip("Click hitbox area relative to the ball collider. 2 doubles the area, the sprite is unchanged.")]
+    [Min(0.1f)] [SerializeField] private float clickAreaMultiplier = 2f;
+    [Tooltip("Clicks still bounce the ball this far above the activation line, in world units. The cursor still changes at the line.")]
+    [Min(0f)] [SerializeField] private float clickGraceAboveLine = 0.3f;
+
     private Vector3 _spawnPosition;
     private float _elapsed;
     private bool _initialized;
@@ -97,8 +103,9 @@ public sealed class FallNBallMinigame : MinigameBase
 
     private bool TryBounceAt(Vector3 point)
     {
-        if (!_playing || HasFallen() || !IsBelowActivationLine(point)
-            || !ballCollider.OverlapPoint(point)) return false;
+        if (!_playing || HasFallen()
+            || activationLine.InverseTransformPoint(point).y >= LocalGrace()
+            || !IsInsideClickArea(point)) return false;
 
         float minHeight = Mathf.Max(0.01f, bounceHeight.x);
         float height = Random.Range(minHeight, Mathf.Max(minHeight, bounceHeight.y));
@@ -106,6 +113,20 @@ public sealed class FallNBallMinigame : MinigameBase
         // Replace downward velocity rather than adding an impulse dependent on fall speed.
         ball.linearVelocity = new Vector2(0f+Random.Range(-10, 10), Mathf.Sqrt(2f * gravity * height));
         return true;
+    }
+
+    private float LocalGrace()
+    {
+        float scale = Mathf.Abs(activationLine.lossyScale.y);
+        return scale > 0.0001f ? clickGraceAboveLine / scale : clickGraceAboveLine;
+    }
+
+    private bool IsInsideClickArea(Vector3 point)
+    {
+        Bounds bounds = ballCollider.bounds;
+        float radius = Mathf.Max(bounds.extents.x, bounds.extents.y) * Mathf.Sqrt(Mathf.Max(0.1f, clickAreaMultiplier));
+        Vector2 offset = (Vector2)(point - bounds.center);
+        return offset.sqrMagnitude <= radius * radius;
     }
 
     private bool HasFallen()

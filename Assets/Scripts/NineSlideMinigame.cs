@@ -16,6 +16,9 @@ public sealed class NineSlideMinigame : MinigameBase, IMinigameWinPresentation
 
     [Header("Timing")]
     [Min(0.01f)] [SerializeField] private float playerMoveDuration = 0.12f;
+    [Tooltip("Shake of the movable tiles when no tile can move in the pressed direction.")]
+    [Min(0f)] [SerializeField] private float blockedShakeDuration = 0.25f;
+    [Min(0f)] [SerializeField] private float blockedShakeStrength = 0.12f;
 
     [Header("Victory")]
     [SerializeField] private GameObject finalEye;
@@ -75,6 +78,8 @@ public sealed class NineSlideMinigame : MinigameBase, IMinigameWinPresentation
     public override void StopGame()
     {
         _phase = Phase.Stopped;
+        if (solvedTiles != null)
+            foreach (Transform tile in solvedTiles) if (tile) tile.DOKill(true);
         _moveTween?.Kill();
         _moveTween = null;
         if (_movingTile != null) _movingTile.localPosition = _moveTarget;
@@ -117,6 +122,24 @@ public sealed class NineSlideMinigame : MinigameBase, IMinigameWinPresentation
         int x = _board.EmptyCell % 3 - dx;
         int y = _board.EmptyCell / 3 - dy;
         if (x >= 0 && x < 3 && y >= 0 && y < 3) SubmitCell(y * 3 + x);
+        else ShakeMovableTiles();
+    }
+
+    private void ShakeMovableTiles()
+    {
+        int empty = _board.EmptyCell;
+        int[] neighbors = { empty - 3, empty + 3, empty - 1, empty + 1 };
+        foreach (int cell in neighbors)
+        {
+            if (!SlidePuzzleBoard.AreNeighbors(empty, cell)) continue;
+            int tile = _board.TileAt(cell);
+            if (tile < 0 || solvedTiles[tile] == null) continue;
+            Transform t = solvedTiles[tile];
+            t.DOKill(true);
+            t.localPosition = _positions[cell];
+            t.DOShakePosition(blockedShakeDuration, blockedShakeStrength, 25, 90f, false, true)
+                .OnKill(() => { if (t) t.localPosition = _positions[cell]; });
+        }
     }
 
     private void Advance(float deltaTime)
@@ -151,6 +174,7 @@ public sealed class NineSlideMinigame : MinigameBase, IMinigameWinPresentation
         if (!_board.TrySlide(cell, out int tile, out int destination)) return;
         _phase = Phase.PlayerMove;
         _movingTile = solvedTiles[tile];
+        _movingTile.DOKill();
         _moveTarget = _positions[destination];
         _moveTween = _movingTile.DOLocalMove(_moveTarget,
                 Mathf.Max(0.01f, playerMoveDuration))

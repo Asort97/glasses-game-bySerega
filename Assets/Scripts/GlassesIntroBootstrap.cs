@@ -198,7 +198,13 @@ public sealed class GlassesIntroBootstrap : MonoBehaviour
 
     public IEnumerator ReplayIntro()
     {
-        yield return BootstrapRoutine(GameAdminSettings.SkipInitialIntroAndTutorial);
+        // A replay after a loss always waits on the rings; the admin skip only drops the tutorial.
+        if (GameAdminSettings.SkipInitialIntroAndTutorial)
+        {
+            var coordinator = FindAnyObjectByType<GameStartSequenceCoordinator>(FindObjectsInactive.Include);
+            if (coordinator != null) coordinator.SkipPostStartSequenceOnce();
+        }
+        yield return BootstrapRoutine(false);
     }
 
     private IEnumerator BootstrapRoutine(bool skipInitialSequence = false)

@@ -15,7 +15,6 @@ public sealed class PursuerBody2D : MonoBehaviour
     private Transform _arena;
     private Vector2 _arenaHalfSize;
     private BoxCollider2D[] _walls;
-    private bool _enteredArena;
     public event System.Action PlayerHit;
 
     public void Begin(Vector3 position, Rigidbody2D target, Collider2D playerCollider,
@@ -26,7 +25,6 @@ public sealed class PursuerBody2D : MonoBehaviour
         _arena = arena;
         _arenaHalfSize = arenaSize * 0.5f;
         _walls = walls;
-        _enteredArena = false;
         _acceleration = acceleration * Random.Range(1f - accelerationVariation, 1f + accelerationVariation);
         _maxSpeed = maxSpeed * Random.Range(1f - speedVariation, 1f + speedVariation);
         transform.position = position;
@@ -56,22 +54,15 @@ public sealed class PursuerBody2D : MonoBehaviour
     private void FixedUpdate()
     {
         if (!_chasing || !_target) return;
-        if (!_enteredArena)
-        {
-            Bounds bounds = hitbox.bounds;
-            Vector3 min = _arena.InverseTransformPoint(bounds.min);
-            Vector3 max = _arena.InverseTransformPoint(bounds.max);
-            if (min.x >= -_arenaHalfSize.x && max.x <= _arenaHalfSize.x
-                && min.y >= -_arenaHalfSize.y && max.y <= _arenaHalfSize.y)
-            {
-                _enteredArena = true;
-                SetWallCollisions(true);
-            }
-        }
         // Acceleration bends the existing velocity instead of snapping toward the target.
         Vector2 acceleration = (_target.position - body.position).normalized * _acceleration;
         body.linearVelocity = Vector2.ClampMagnitude(body.linearVelocity
             + acceleration * Time.fixedDeltaTime, _maxSpeed);
+    }
+
+    public void IgnoreCollisionWith(PursuerBody2D other)
+    {
+        if (hitbox && other && other.hitbox) Physics2D.IgnoreCollision(hitbox, other.hitbox, true);
     }
 
     private void SetWallCollisions(bool enabled)

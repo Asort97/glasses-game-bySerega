@@ -22,7 +22,6 @@ public class UnouroborosMinigame : MinigameBase
     private Vector2Int _headCell;
     private Vector2Int _lastMoveDirection;
     private Vector2Int _queuedDirection;
-    private bool _hasMoved;
     private float _elapsed;
     private float _stepTimer;
     private bool _unouroborosRunning;
@@ -56,7 +55,6 @@ public class UnouroborosMinigame : MinigameBase
         _headCell = Vector2Int.zero;
         _lastMoveDirection = Vector2Int.zero;
         _queuedDirection = Vector2Int.zero;
-        _hasMoved = false;
         _occupiedCells.Clear();
         _occupiedCells.Add(_headCell);
         Progress = 1f;
@@ -72,7 +70,6 @@ public class UnouroborosMinigame : MinigameBase
     {
         _unouroborosRunning = false;
         _queuedDirection = Vector2Int.zero;
-        _hasMoved = false;
         base.StopGame();
     }
 
@@ -92,8 +89,8 @@ public class UnouroborosMinigame : MinigameBase
             return;
         }
 
-        if (_hasMoved)
-            ReadDirectionInput();
+        // Input is read from the start, so the second segment can already turn.
+        ReadDirectionInput();
 
         _stepTimer += dt;
         while (_stepTimer >= stepInterval && _unouroborosRunning)
@@ -137,7 +134,6 @@ public class UnouroborosMinigame : MinigameBase
         _occupiedCells.Add(nextCell);
         _headCell = nextCell;
         _lastMoveDirection = direction;
-        _hasMoved = true;
 
         if (_queuedDirection == direction)
             _queuedDirection = Vector2Int.zero;
@@ -175,9 +171,6 @@ public class UnouroborosMinigame : MinigameBase
 
     private Vector2Int PickDirection()
     {
-        if (!_hasMoved)
-            return Vector2Int.down;
-
         if (_queuedDirection != Vector2Int.zero)
             return _queuedDirection;
 

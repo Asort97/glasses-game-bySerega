@@ -12,11 +12,20 @@ public abstract class MinigameBase : MonoBehaviour
     [SerializeField] protected float surviveTime = 10f;
     [SerializeField] private Sprite previewTitleSprite;
     [SerializeField] private MiniTutorialType tutorialType;
+    [Tooltip("Seconds to finish a Completion game and earn a skip charge. 0 uses the lens default.")]
+    [Min(0f)] [SerializeField] private float perfectTime;
+    [Tooltip("Hide the perfect-time marker on the timer while keeping the reward rule.")]
+    [SerializeField] private bool hidePerfectMarker;
 
     /// <summary>0 = пусто, 1 = полный таймер</summary>
     public float Progress { get; protected set; } = 1f;
     public Sprite PreviewTitleSprite => previewTitleSprite != null ? previewTitleSprite : GetFallbackPreviewSprite();
     public MiniTutorialType TutorialType => tutorialType;
+    public bool HidePerfectMarker => hidePerfectMarker;
+
+    /// <summary>Remaining timer fraction above which a win earns a skip charge.</summary>
+    public float GetRemainingThreshold(float fallback) => perfectTime > 0f && surviveTime > 0f
+        ? Mathf.Clamp01(1f - perfectTime / surviveTime) : fallback;
 
     public event System.Action OnWin;
     public event System.Action OnLose;

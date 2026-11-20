@@ -45,6 +45,24 @@ public class DesktopScreenshotBackground : MonoBehaviour
     [DllImport("user32.dll")]
     private static extern IntPtr GetDC(IntPtr hWnd);
 
+    private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr window, System.Text.StringBuilder className, int maxCount);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowDisplayAffinity(IntPtr window, uint affinity);
+
+    private const uint WDA_NONE = 0x0;
+    // Windows 10 2004+: the window is left out of screen captures, so the desktop behind it is captured.
+    private const uint WDA_EXCLUDEFROMCAPTURE = 0x11;
+    private static IntPtr _foundWindow;
+    private static uint _processId;
+    private static IntPtr _earlyHiddenWindow;
+
     [DllImport("user32.dll")]
     private static extern IntPtr GetActiveWindow();
 
@@ -122,11 +140,37 @@ public class DesktopScreenshotBackground : MonoBehaviour
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
         if (!DesktopLaunchSession.IsRequested)
         {
-            _hiddenWindow = ResolveGameWindow();
-            if (_hiddenWindow != IntPtr.Zero)
-                ShowWindow(_hiddenWindow, SW_HIDE);
+            _hiddenWindow = _earlyHiddenWindow != IntPtr.Zero ? _earlyHiddenWindow : ResolveGameWindow();
+            HideFromCapture(_hiddenWindow);
         }
 #endif
+    }
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+    // Runs before the first scene loads, so the player window is hidden before it can paint white.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+    private static void HideWindowEarly()
+    {
+        if (DesktopLaunchSession.IsRequested) return;
+        _earlyHiddenWindow = ResolveGameWindow();
+        HideFromCapture(_earlyHiddenWindow);
+    }
+#endif
+
+    private static void HideFromCapture(IntPtr window)
+    {
+        if (window == IntPtr.Zero) return;
+        try { SetWindowDisplayAffinity(window, WDA_EXCLUDEFROMCAPTURE); }
+        catch (Exception) { /* Older Windows: hiding the window below still applies. */ }
+        ShowWindow(window, SW_HIDE);
+    }
+
+    private static void RestoreCapture(IntPtr window)
+    {
+        if (window == IntPtr.Zero) return;
+        // Recording and streaming tools must see the game again.
+        try { SetWindowDisplayAffinity(window, WDA_NONE); }
+        catch (Exception) { }
     }
 
     private IEnumerator Start()
@@ -199,8 +243,10 @@ public class DesktopScreenshotBackground : MonoBehaviour
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
         else if (_hiddenWindow != IntPtr.Zero)
         {
+            RestoreCapture(_hiddenWindow);
             ShowWindow(_hiddenWindow, SW_SHOW);
             _hiddenWindow = IntPtr.Zero;
+            _earlyHiddenWindow = IntPtr.Zero;
         }
 #endif
         IsReady = true;
@@ -326,6 +372,14 @@ public class DesktopScreenshotBackground : MonoBehaviour
 
     private static IntPtr ResolveGameWindow()
     {
+        // MainWindowHandle and GetActiveWindow are often still empty this early in startup.
+        _foundWindow = IntPtr.Zero;
+        _processId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+        try { EnumWindows(FindUnityWindow, IntPtr.Zero); }
+        catch (Exception exception) { Debug.LogWarning($"{LogPrefix} EnumWindows failed: {exception.Message}"); }
+        if (_foundWindow != IntPtr.Zero)
+            return _foundWindow;
+
         IntPtr processWindow = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
         if (processWindow != IntPtr.Zero)
         {
@@ -337,6 +391,20 @@ public class DesktopScreenshotBackground : MonoBehaviour
         GetWindowThreadProcessId(gameWindow, out uint processId);
         return processId == (uint)System.Diagnostics.Process.GetCurrentProcess().Id
             ? gameWindow : IntPtr.Zero;
+    }
+
+    [AOT.MonoPInvokeCallback(typeof(EnumWindowsProc))]
+    private static bool FindUnityWindow(IntPtr window, IntPtr parameter)
+    {
+        GetWindowThreadProcessId(window, out uint processId);
+        if (processId != _processId)
+            return true;
+        var className = new System.Text.StringBuilder(64);
+        GetClassName(window, className, className.Capacity);
+        if (className.ToString() != "UnityWndClass")
+            return true;
+        _foundWindow = window;
+        return false;
     }
 
     private Texture2D CaptureDesktopPixels()

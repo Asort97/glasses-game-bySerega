@@ -16,9 +16,11 @@ public sealed class GameQuitController : MonoBehaviour
     [FormerlySerializedAs("flickerReleaseDuration")]
     [Min(0.01f)] [SerializeField] private float holdReleaseDuration = 0.5f;
     [Header("Quick Exit During Gameplay")]
-    [Min(1)] [SerializeField] private int quickExitPressCount = 5;
+    [Min(1)] [SerializeField] private int quickExitPressCount = 4;
     [Min(0.1f)] [SerializeField] private float quickExitPressWindow = 2f;
     [Min(1f)] [SerializeField] private float quickExitSpeedMultiplier = 5f;
+    [Tooltip("Quit anyway if the exit animation has not finished after this many real seconds.")]
+    [Min(0.5f)] [SerializeField] private float quitAnimationTimeout = 3f;
 
     [Header("Glasses")]
     [SerializeField] private GlassesIntroBootstrap introBootstrap;
@@ -59,18 +61,26 @@ public sealed class GameQuitController : MonoBehaviour
 
     private void Update()
     {
+        // Rapid Escape presses always quit, whatever the game is doing.
+        if (RegisterEscapeSpam())
+        {
+            if (!_quitting && !_inputBlocked && CanQuickQuitFromGameplay())
+                StartCoroutine(QuitRoutine(quickExitSpeedMultiplier, true));
+            else
+                QuitApplication();
+            return;
+        }
+
         if (_quitting || _inputBlocked)
             return;
 
         if (CanQuitFromGameStart())
         {
-            ResetEscapeSpam();
             UpdateGameStartHold();
             return;
         }
 
         ReleaseHold();
-        UpdateGameplayEscapeSpam();
     }
 
     private void UpdateGameStartHold()
@@ -101,16 +111,10 @@ public sealed class GameQuitController : MonoBehaviour
         return true;
     }
 
-    private void UpdateGameplayEscapeSpam()
+    private bool RegisterEscapeSpam()
     {
-        if (!CanQuickQuitFromGameplay())
-        {
-            ResetEscapeSpam();
-            return;
-        }
-
         if (!Input.GetKeyDown(KeyCode.Escape))
-            return;
+            return false;
 
         float now = Time.unscaledTime;
         if (_escapePressCount == 0 || now - _escapeSpamStartTime > quickExitPressWindow)
@@ -120,9 +124,7 @@ public sealed class GameQuitController : MonoBehaviour
         }
 
         _escapePressCount++;
-
-        if (_escapePressCount >= Mathf.Max(1, quickExitPressCount))
-            StartCoroutine(QuitRoutine(quickExitSpeedMultiplier, true));
+        return _escapePressCount >= Mathf.Max(1, quickExitPressCount);
     }
 
     private bool CanQuickQuitFromGameplay()
@@ -174,8 +176,13 @@ public sealed class GameQuitController : MonoBehaviour
             if (crtPowerOffController != null)
                 StartCoroutine(PlayPowerOff(speedMultiplier));
 
-            while (!_exitAnimationFinished || !_powerOffFinished || !_rageQuitVisualsFinished)
+            float waited = 0f;
+            while ((!_exitAnimationFinished || !_powerOffFinished || !_rageQuitVisualsFinished)
+                && waited < quitAnimationTimeout)
+            {
+                waited += Time.unscaledDeltaTime;
                 yield return null;
+            }
 
             QuitApplication();
             yield break;
@@ -195,8 +202,12 @@ public sealed class GameQuitController : MonoBehaviour
         if (crtPowerOffController != null)
             yield return crtPowerOffController.PlayPowerOff(speedMultiplier);
 
-        while (!_exitAnimationFinished)
+        float exitWaited = 0f;
+        while (!_exitAnimationFinished && exitWaited < quitAnimationTimeout)
+        {
+            exitWaited += Time.unscaledDeltaTime;
             yield return null;
+        }
 
         QuitApplication();
     }
@@ -301,6 +312,7 @@ public sealed class GameQuitController : MonoBehaviour
 
     private void QuitApplication()
     {
+        _quitting = true;
 #if UNITY_EDITOR
         Time.timeScale = _previousTimeScale;
         UnityEditor.EditorApplication.isPlaying = false;

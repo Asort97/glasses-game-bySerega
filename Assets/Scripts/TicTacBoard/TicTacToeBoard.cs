@@ -1,35 +1,33 @@
 using System;
+using DG.Tweening;
 using UnityEngine;
 
 public class TicTacToeBoard : MonoBehaviour
 {
-    /// <summary>Все сценарии пройдены.</summary>
-    public event Action OnAllComplete;
     /// <summary>Игрок кликнул правильную клетку — победа.</summary>
     public event Action OnCorrectClick;
     /// <summary>Игрок кликнул неправильную клетку — поражение.</summary>
     public event Action OnWrongClick;
     public enum Mark { X, O }
 
-    [Serializable]
-    public class TargetCell
+    // Rows top to bottom. The minority symbol is the player's and wins at the target cell.
+    // Rules: the majority has two in a line with an empty finishing cell plus one more mark;
+    // the minority has two in a line whose empty cell is the target.
+    private struct Pattern
     {
-        [Range(0, 2)] public int row;
-        [Range(0, 2)] public int col;
+        public string[] Rows;
+        public int TargetRow, TargetCol;
+        public Pattern(int row, int col, params string[] rows) { Rows = rows; TargetRow = row; TargetCol = col; }
     }
 
-    [Serializable]
-    public class Scenario
+    private static readonly Pattern[] Patterns =
     {
-        [Tooltip("GameObject сценария (например Scenario1). Активируется когда сценарий выбран.")]
-        public GameObject root;
-
-        [Tooltip("За какой символ ходит игрок в этом сценарии.")]
-        public Mark playerSymbol = Mark.X;
-
-        [Tooltip("Последовательность правильных клеток которые надо кликнуть по очерёди.")]
-        public TargetCell[] targetCells;
-    }
+        new Pattern(0, 2, "OO.", "XX.", ".X."),
+        new Pattern(2, 2, "OO.", "..O", "XX."),
+        new Pattern(2, 0, "XO.", "XO.", "..O"),
+        new Pattern(2, 2, "XXO", "X.O", "..."),
+        new Pattern(1, 2, ".O.", "XX.", "OO."),
+    };
 
     [Header("Refs")]
     [SerializeField] private Camera mainCamera;
@@ -54,12 +52,9 @@ public class TicTacToeBoard : MonoBehaviour
     [SerializeField] private bool invertClickX = false;
     [SerializeField] private bool invertClickY = false;
 
-    [Header("Scenarios")]
-    [SerializeField] private Scenario[] scenarios;
-    [Tooltip("Автопереход к следующему сценарию после клика.")]
-    [SerializeField] private bool advanceOnClick = true;
-    [Tooltip("Задержка в секундах перед сменой сценария.")]
-    [SerializeField] private float advanceDelay = 1f;
+    [Header("Wrong Click")]
+    [SerializeField] private float wrongShakeDuration = 0.3f;
+    [SerializeField] private float wrongShakeStrength = 0.15f;
 
     private MeshCollider _lensCollider;
     private MeshFilter _lensMeshFilter;
@@ -67,17 +62,16 @@ public class TicTacToeBoard : MonoBehaviour
     private int _uAxis = 0;
     private int _vAxis = 1;
     private int _normalAxis = 2;
-    private int _current = -1;
-    private bool _finished;
-    private bool _advancing;
+    private int _targetIndex = -1;
+    private Mark _playerMark;
+    private bool _locked = true;
+    private readonly System.Collections.Generic.List<GameObject> _spawnedMarks = new System.Collections.Generic.List<GameObject>();
 
     private void Awake()
     {
         ResolveRefs();
         EnsureLensCollider();
         if (marksParent == null) marksParent = transform;
-
-        SetScenario(0);
     }
 
     private void OnEnable()
@@ -88,7 +82,7 @@ public class TicTacToeBoard : MonoBehaviour
 
     private void OnDisable()
     {
-        CancelPendingAdvance();
+        _locked = true;
     }
 
     private void ResolveRefs()
@@ -130,13 +124,7 @@ public class TicTacToeBoard : MonoBehaviour
 
     private void Update()
     {
-        if (_finished)
-        {
-            if (Input.GetKeyDown(KeyCode.R)) SetScenario(0);
-            return;
-        }
-        if (_advancing) return;
-        if (!Input.GetMouseButtonDown(0)) return;
+        if (_locked || _targetIndex < 0 || !Input.GetMouseButtonDown(0)) return;
         if (mainCamera == null || boardCamera == null || _lensCollider == null)
         {
             ResolveRefs();
@@ -150,46 +138,22 @@ public class TicTacToeBoard : MonoBehaviour
         int idx = UvToCellIndex(GetUvFromLensHit(hit.point));
         if (idx < 0) return;
 
-        var sc = scenarios[_current];
-        if (sc.targetCells == null || sc.targetCells.Length == 0) return;
-        var target = sc.targetCells[0];
-        int targetIdx = target.row * 3 + target.col;
-        int row = idx / 3, col = idx % 3;
-
-        SpawnMark(row, col, sc.playerSymbol);
-
-        if (idx != targetIdx)
+        _locked = true;
+        GameObject mark = SpawnMark(idx / 3, idx % 3, _playerMark);
+        if (idx != _targetIndex)
         {
-            OnWrongClick?.Invoke(); // неверная клетка — поражение
+            if (mark != null)
+                mark.transform.DOShakePosition(wrongShakeDuration, wrongShakeStrength, 25, 90f, false, true);
+            OnWrongClick?.Invoke();
             return;
         }
-
-        OnCorrectClick?.Invoke(); // верная клетка — победа
-
-        if (!advanceOnClick)
-            return;
-
-        // переход к следующему сценарию
-        int next = _current + 1;
-        if (advanceDelay > 0f)
-        {
-            _advancing = true;
-            Invoke(nameof(AdvanceNow), advanceDelay);
-            _pendingNext = next;
-        }
-        else
-        {
-            SetScenario(next);
-        }
+        OnCorrectClick?.Invoke();
     }
 
-    private int _pendingNext;
-    private readonly System.Collections.Generic.List<GameObject> _spawnedMarks = new System.Collections.Generic.List<GameObject>();
-
-    private void SpawnMark(int row, int col, Mark mark)
+    private GameObject SpawnMark(int row, int col, Mark mark)
     {
         Sprite sprite = mark == Mark.X ? spriteX : spriteO;
-        if (sprite == null) return;
+        if (sprite == null) return null;
 
         Vector2 center = GetBoardCenter();
         float x = center.x + (col - 1) * cellSpacing;
@@ -207,58 +171,57 @@ public class TicTacToeBoard : MonoBehaviour
         if (!string.IsNullOrEmpty(sortingLayerName)) sr.sortingLayerName = sortingLayerName;
 
         _spawnedMarks.Add(go);
+        return go;
     }
 
     private void ClearSpawnedMarks()
     {
         for (int i = 0; i < _spawnedMarks.Count; i++)
-            if (_spawnedMarks[i] != null) Destroy(_spawnedMarks[i]);
+            if (_spawnedMarks[i] != null)
+            {
+                _spawnedMarks[i].transform.DOKill();
+                Destroy(_spawnedMarks[i]);
+            }
         _spawnedMarks.Clear();
     }
 
-    private void AdvanceNow()
-    {
-        _advancing = false;
-        SetScenario(_pendingNext);
-    }
-
-    private void SetScenario(int index)
-    {
-        _advancing = false;
-        CancelInvoke(nameof(AdvanceNow));
-
-        ClearSpawnedMarks();
-        if (scenarios == null || scenarios.Length == 0)
-        {
-            _finished = true;
-            return;
-        }
-        for (int i = 0; i < scenarios.Length; i++)
-            if (scenarios[i] != null && scenarios[i].root != null) scenarios[i].root.SetActive(false);
-
-        if (index < 0 || index >= scenarios.Length)
-        {
-            _current = -1;
-            _finished = true;
-            OnAllComplete?.Invoke();
-            Debug.Log("[TicTacToe] All scenarios complete. Press R to restart.");
-            return;
-        }
-
-        _current = index;
-        _finished = false;
-        var sc = scenarios[_current];
-        if (sc != null && sc.root != null) sc.root.SetActive(true);
-        string scName = sc != null && sc.root != null ? sc.root.name : "<none>";
-        int totalSteps = sc?.targetCells != null ? sc.targetCells.Length : 0;
-        Debug.Log($"[TicTacToe] Scenario '{scName}' active. Steps: {totalSteps}");
-    }
-
-    /// <summary>Перезапустить игру с случайного сценария.</summary>
+    /// <summary>Случайный паттерн, повёрнутый на случайные 0/90/180/270 градусов.</summary>
     public void ResetGame()
     {
-        if (scenarios == null || scenarios.Length == 0) { SetScenario(0); return; }
-        SetScenario(UnityEngine.Random.Range(0, scenarios.Length));
+        ClearSpawnedMarks();
+        Pattern pattern = Patterns[UnityEngine.Random.Range(0, Patterns.Length)];
+        int turns = UnityEngine.Random.Range(0, 4);
+        int xCount = 0, oCount = 0;
+        for (int r = 0; r < 3; r++)
+            for (int c = 0; c < 3; c++)
+            {
+                char symbol = pattern.Rows[r][c];
+                if (symbol == '.') continue;
+                Mark mark = symbol == 'X' ? Mark.X : Mark.O;
+                if (mark == Mark.X) xCount++; else oCount++;
+                Rotate(r, c, turns, out int row, out int col);
+                SpawnMark(row, col, mark);
+            }
+        _playerMark = xCount < oCount ? Mark.X : Mark.O;
+        Rotate(pattern.TargetRow, pattern.TargetCol, turns, out int targetRow, out int targetCol);
+        _targetIndex = targetRow * 3 + targetCol;
+        _locked = false;
+    }
+
+    /// <summary>Блокирует ввод до следующего ResetGame.</summary>
+    public void Lock() => _locked = true;
+
+    // Clockwise quarter turns of the 3x3 grid.
+    private static void Rotate(int row, int col, int turns, out int outRow, out int outCol)
+    {
+        for (int i = 0; i < turns; i++)
+        {
+            int temp = row;
+            row = col;
+            col = 2 - temp;
+        }
+        outRow = row;
+        outCol = col;
     }
 
     // Сравниваем UV попадания с viewport-позицией каждой ячейки через WorldToViewportPoint.
@@ -289,12 +252,6 @@ public class TicTacToeBoard : MonoBehaviour
             }
         }
         return bestIdx;
-    }
-
-    public void CancelPendingAdvance()
-    {
-        _advancing = false;
-        CancelInvoke(nameof(AdvanceNow));
     }
 
     private Vector2 GetBoardCenter()

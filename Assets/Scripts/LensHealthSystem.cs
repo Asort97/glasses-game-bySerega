@@ -54,6 +54,7 @@ public class LensHealthSystem : MonoBehaviour
     public bool IsBroken => _broken;
     public bool IsPermanentlyBroken => _permanentlyBroken;
     public int CurrentHp => _hp;
+    public int MaxHp => maxHP;
     public bool LoseFromLeft => loseFromLeft;
     public bool IsLeftLens => isLeftLens;
 
@@ -70,7 +71,7 @@ public class LensHealthSystem : MonoBehaviour
 
     public void OnLose()
     {
-        if (_broken || _gameOver)
+        if (_broken || _gameOver || GameAdminSettings.InfiniteLives)
             return;
 
         _tutorialRecovery = false;

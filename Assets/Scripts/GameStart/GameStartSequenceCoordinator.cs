@@ -40,6 +40,10 @@ public class GameStartSequenceCoordinator : MonoBehaviour
     private bool _accelerated;
     private bool _completed;
     private float _musicRampProgress;
+    private bool _skipPostStart;
+
+    /// <summary>Next start goes straight to the minigames after the rings, without tutorial or cutscene.</summary>
+    public void SkipPostStartSequenceOnce() => _skipPostStart = true;
 
     public void ResetSequence()
     {
@@ -105,10 +109,12 @@ public class GameStartSequenceCoordinator : MonoBehaviour
 
         HideGameStartsForPostStartSequence();
 
-        if (postStartTutorial != null)
+        bool skipPostStart = _skipPostStart;
+        _skipPostStart = false;
+        if (!skipPostStart && postStartTutorial != null)
             yield return postStartTutorial.Play();
 
-        if (postStartCutscene != null)
+        if (!skipPostStart && postStartCutscene != null)
             yield return postStartCutscene.Play();
 
         CompleteGameStarts();

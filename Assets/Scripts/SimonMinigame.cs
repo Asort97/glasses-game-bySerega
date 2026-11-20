@@ -3,7 +3,7 @@ using UnityEngine;
 public sealed class SimonMinigame : MinigameBase
 {
     private enum Direction { Up, Right, Down, Left }
-    private enum Phase { Stopped, InitialPause, BracketPause, Showing, Gap, Input }
+    private enum Phase { Stopped, InitialPause, BracketPause, Showing, Gap, Input, Failing }
 
     [Header("Visuals")]
     [SerializeField] private Transform crossHighlight;
@@ -17,6 +17,8 @@ public sealed class SimonMinigame : MinigameBase
     [Min(0.01f)] [SerializeField] private float directionDuration = 0.5f;
     [Min(0.01f)] [SerializeField] private float gapDuration = 0.25f;
     [Min(0.01f)] [SerializeField] private float inputHighlightDuration = 0.15f;
+    [Tooltip("Pause after a wrong input before the loss. Further input is ignored.")]
+    [Min(0f)] [SerializeField] private float wrongInputDelay = 1f;
 
     private readonly Direction[] _sequence = new Direction[3];
     private readonly Direction[] _choices = new Direction[4];
@@ -83,7 +85,7 @@ public sealed class SimonMinigame : MinigameBase
             count++;
         }
         if (count > 1)
-            Finish(false);
+            BeginFailure();
         else if (count == 1)
             SubmitDirection(pressed);
     }
@@ -91,6 +93,12 @@ public sealed class SimonMinigame : MinigameBase
     private void Advance(float deltaTime)
     {
         if (_phase == Phase.Stopped || deltaTime <= 0f) return;
+        if (_phase == Phase.Failing)
+        {
+            _phaseRemaining -= deltaTime;
+            if (_phaseRemaining <= 0f) Finish(false);
+            return;
+        }
         if (_phase == Phase.Input)
         {
             if (_bracketHideRemaining > 0f)
@@ -149,9 +157,16 @@ public sealed class SimonMinigame : MinigameBase
         ShowDirection(direction);
         _highlightRemaining = Mathf.Max(0.01f, inputHighlightDuration);
         if (direction != _sequence[_inputIndex])
-            Finish(false);
+            BeginFailure();
         else if (++_inputIndex == _sequence.Length)
             Finish(true);
+    }
+
+    private void BeginFailure()
+    {
+        _phase = Phase.Failing;
+        _phaseRemaining = wrongInputDelay;
+        if (_phaseRemaining <= 0f) Finish(false);
     }
 
     private static bool WasPressed(Direction direction)

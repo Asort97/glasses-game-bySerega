@@ -118,6 +118,12 @@ public sealed class DebuffSpawner : MonoBehaviour
             if (!IsGameplayActive())
                 continue;
 
+            if (GameAdminSettings.DebuffSelection == GameAdminSettings.DebuffsOff)
+            {
+                elapsed = 0f;
+                continue;
+            }
+
             elapsed += Time.unscaledDeltaTime;
             if (elapsed < spawnInterval)
                 continue;
@@ -182,10 +188,21 @@ public sealed class DebuffSpawner : MonoBehaviour
         return true;
     }
 
+    public DebuffDefinition[] Definitions => definitions;
+
     private DebuffDefinition PickRandomDefinition()
     {
         if (definitions == null || definitions.Length == 0)
             return null;
+
+        // Admin console can force one debuff to appear every time.
+        string forced = GameAdminSettings.DebuffSelection;
+        if (forced == GameAdminSettings.DebuffsOff) return null;
+        if (!string.IsNullOrEmpty(forced) && System.Enum.TryParse(forced, out DebuffId forcedId))
+        {
+            DebuffDefinition definition = GetDefinition(forcedId);
+            if (definition != null) return definition;
+        }
 
         float totalWeight = 0f;
         foreach (DebuffDefinition definition in definitions)

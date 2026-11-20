@@ -144,14 +144,11 @@ public class LensGameOverController : MonoBehaviour
         yield return new WaitForSecondsRealtime(restartDelay);
         ResetRunState();
 
-        bool skipInitialSequence = GameAdminSettings.SkipInitialIntroAndTutorial;
+        // After a loss the player must bring both circles into the rings again and click.
+        if (gameStartSequenceCoordinator != null)
+            gameStartSequenceCoordinator.SkipPostStartSequenceOnce();
         foreach (LensMinigameManager manager in minigameManagers)
-        {
-            if (skipInitialSequence)
-                manager.RestartFromRegularMinigames();
-            else
-                manager.RestartFromGameStart();
-        }
+            manager.RestartFromGameStart();
 
         if (crtPowerOffController != null)
             yield return crtPowerOffController.PlayPowerOn();

@@ -10,6 +10,8 @@ public sealed class SquareFollowerMinigame : MinigameBase
     [SerializeField] private DvdBounceMovement movement;
     [SerializeField] private Rect insideBounds = new Rect(-0.9f, -0.9f, 1.8f, 1.8f);
     [Min(0f)] [SerializeField] private float entryGraceDuration = 1f;
+    [Tooltip("Blink period of the grey square before it starts moving.")]
+    [Min(0.01f)] [SerializeField] private float greyBlinkInterval = 0.12f;
 
     private bool _playing;
     private bool _tracking;
@@ -30,6 +32,7 @@ public sealed class SquareFollowerMinigame : MinigameBase
         _elapsed = _entryElapsed = 0f;
         _tracking = false;
         SetSquareColor(new Color(0.4f, 0.4f, 0.4f, 1f));
+        SetSquareVisible(true);
         _playing = true;
         _ownsCursor = true;
         canvasCursor.SetShowOutsideRightLensWhenHidden(true);
@@ -46,6 +49,7 @@ public sealed class SquareFollowerMinigame : MinigameBase
             canvasCursor.SetCursorSpriteVisible(true);
         }
         _ownsCursor = false;
+        SetSquareVisible(true);
         base.StopGame();
     }
 
@@ -78,8 +82,13 @@ public sealed class SquareFollowerMinigame : MinigameBase
         if (!_tracking)
         {
             _entryElapsed += deltaTime;
-            if (_entryElapsed < entryGraceDuration) return;
+            if (_entryElapsed < entryGraceDuration)
+            {
+                SetSquareVisible(Mathf.FloorToInt(_entryElapsed / greyBlinkInterval) % 2 == 0);
+                return;
+            }
             _tracking = true;
+            SetSquareVisible(true);
             SetSquareColor(Color.white);
             deltaTime = Mathf.Max(0f, _entryElapsed - entryGraceDuration);
         }
@@ -88,6 +97,13 @@ public sealed class SquareFollowerMinigame : MinigameBase
         _elapsed += deltaTime;
         Progress = 1f - Mathf.Clamp01(_elapsed / Mathf.Max(0.01f, surviveTime));
         if (Progress <= 0f) Finish(true);
+    }
+
+    private void SetSquareVisible(bool visible)
+    {
+        if (squareRenderers == null) return;
+        foreach (SpriteRenderer renderer in squareRenderers)
+            if (renderer) renderer.enabled = visible;
     }
 
     private void SetSquareColor(Color color)
