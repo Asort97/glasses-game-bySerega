@@ -38,6 +38,7 @@ public class BossLevelDirector : MonoBehaviour
     public event Action BossWon;
 
     public int PassedMinigames => _passedMinigames;
+    public bool HasPendingBoss => _bossQueued || _activeBoss != null;
     public int MinigamesPerBoss => minigamesPerBoss;
     public int CompletedRounds { get; private set; }
 
@@ -81,6 +82,8 @@ public class BossLevelDirector : MonoBehaviour
 
         if (!_bossQueued)
         {
+            if ((leftManager && leftManager.HasAdminOverride) || (rightManager && rightManager.HasAdminOverride))
+                return false;
             _passedMinigames++;
             _bossQueued = _passedMinigames >= minigamesPerBoss;
             BossProgressChanged?.Invoke(_passedMinigames, minigamesPerBoss);

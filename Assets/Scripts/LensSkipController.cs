@@ -17,6 +17,7 @@ public sealed class LensSkipController : MonoBehaviour
     private int _charges;
     private Coroutine _skipRoutine;
     public int Charges => _charges;
+    public void RefillCharges() => _charges = requiredCharges;
     public bool CanUse => _charges >= requiredCharges && _skipRoutine == null
         && manager && manager.CanSkip && effect && effect.IsConfigured;
 
@@ -62,16 +63,24 @@ public sealed class LensSkipController : MonoBehaviour
 
     public void TryUse()
     {
-        if (!CanUse || !manager.TryBeginSkip()) return;
+        if (!CanUse || !effect.TryCapture(view.IsOnLeftHalf)) return;
+        if (!manager.TryBeginSkip())
+        {
+            effect.ResetEffect();
+            return;
+        }
         _charges = 0;
         view.Hide();
+        manager.ClearSkippedGame();
         _skipRoutine = StartCoroutine(SkipRoutine());
     }
 
     private IEnumerator SkipRoutine()
     {
-        yield return effect.Play(manager.ClearSkippedGame, manager.CompleteSkip);
+        yield return new WaitForSecondsRealtime(effect.Duration);
+        effect.ResetEffect();
         _skipRoutine = null;
+        manager.CompleteSkip();
     }
 
     private void CancelSkip()

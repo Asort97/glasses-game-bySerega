@@ -29,12 +29,15 @@ public sealed class LensSkipView : MonoBehaviour
         }
     }
 
+    private Renderer DisplayedLens => otherLensRenderer && effect && effect.LensMaterial
+            && otherLensRenderer.sharedMaterial == effect.LensMaterial ? otherLensRenderer : lensRenderer;
+
+    public bool IsOnLeftHalf => screenCamera.WorldToViewportPoint(DisplayedLens.bounds.center).x < 0.5f;
+
     private void LateUpdate()
     {
         if (!rewardsRoot || !rewardsRoot.gameObject.activeSelf || !screenCamera || !lensRenderer) return;
-        Renderer displayed = otherLensRenderer && effect && effect.LensMaterial
-            && otherLensRenderer.sharedMaterial == effect.LensMaterial ? otherLensRenderer : lensRenderer;
-        Bounds bounds = displayed.bounds;
+        Bounds bounds = DisplayedLens.bounds;
         Vector3 center = screenCamera.WorldToScreenPoint(bounds.center);
         float minX = center.x, maxX = center.x;
         for (int i = 0; i < 8; i++)

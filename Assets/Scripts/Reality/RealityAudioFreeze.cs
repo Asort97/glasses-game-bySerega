@@ -76,6 +76,20 @@ public sealed class RealityAudioFreeze : MonoBehaviour
         finally { _system.unlockDSP(); }
     }
 
+    public void SetEarFreeze(bool left, bool frozen)
+    {
+        if (!_dsp.hasHandle() || _system.lockDSP() != FMOD.RESULT.OK) return;
+        try
+        {
+            int ear = left ? 0 : 1;
+            if (frozen)
+                _state.History.FreezeEar(ear, Mathf.RoundToInt(_sampleRate * loopMilliseconds / 1000f), freezeVolume);
+            else
+                _state.History.ResumeEar(ear);
+        }
+        finally { _system.unlockDSP(); }
+    }
+
     [AOT.MonoPInvokeCallback(typeof(FMOD.DSP_READ_CALLBACK))]
     private static FMOD.RESULT Read(ref FMOD.DSP_STATE dspState, IntPtr input, IntPtr output,
         uint length, int inChannels, ref int outChannels)

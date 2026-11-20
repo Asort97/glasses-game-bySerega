@@ -31,6 +31,13 @@ public sealed class QuarteredScreenCapture : MonoBehaviour
         };
         _snapshot.Create();
 
+        RenderFrame(_snapshot);
+        RandomizeStrips();
+        _showSnapshot = true;
+    }
+
+    public void RenderFrame(RenderTexture target)
+    {
         // Synchronous off-screen rendering prevents a whole, uncut demon frame flashing first.
         // The OnGUI presentation is not rendered by this camera and cannot capture itself.
         var originalTarget = captureCamera.targetTexture;
@@ -42,7 +49,7 @@ public sealed class QuarteredScreenCapture : MonoBehaviour
                 canvasStates[i] = CanvasState.Include(overlayCanvases[i], captureCamera);
             Canvas.ForceUpdateCanvases();
             RenderPipeline.SubmitRenderRequest(captureCamera,
-                new RenderPipeline.StandardRequest { destination = _snapshot });
+                new RenderPipeline.StandardRequest { destination = target });
         }
         finally
         {
@@ -51,9 +58,6 @@ public sealed class QuarteredScreenCapture : MonoBehaviour
                 state.Restore();
             Canvas.ForceUpdateCanvases();
         }
-
-        RandomizeStrips();
-        _showSnapshot = true;
     }
 
     private void RandomizeStrips()

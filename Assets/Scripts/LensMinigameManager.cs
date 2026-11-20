@@ -16,7 +16,61 @@ public class LensMinigameManager : MonoBehaviour
     private bool _skipPending;
     public MinigameBase ActiveMinigame => _gameInProgress ? _current : null;
     public bool CanSkip => IsPlayingRegularMinigame && _gameInProgress && !_skipPending && !_waitingForBoss;
-    public bool ShowSkipRewards => enabled && _started && !_paused && !_waitingForBoss && !IsPlayingGameStart;
+    public bool ShowSkipRewards => enabled && _started && !_paused && !_waitingForBoss && !_adminBlank && !IsPlayingGameStart;
+
+    public IEnumerable<MinigameBase> RegularPool
+    {
+        get
+        {
+            var first = ResolveStartMinigame();
+            foreach (var game in minigames)
+                if (game && game != first) yield return game;
+        }
+    }
+
+    public bool HasAdminOverride => _adminOff || _adminGame;
+    private bool _adminOff, _regularCycle, _adminBlank;
+    private MinigameBase _adminGame;
+    [SerializeField] private Camera lensGameCamera;
+    private int _savedMask;
+    private Color _savedBackground;
+    private CameraClearFlags _savedClear;
+
+    public void SetAdminSelection(bool off, MinigameBase game)
+    {
+        if (_adminOff == off && _adminGame == game) return;
+        _adminOff = off;
+        _adminGame = game;
+        if (!_regularCycle || _testMode || !isActiveAndEnabled || _paused || _waitingForBoss
+            || _finishRoutine != null || (bossDirector && bossDirector.HasPendingBoss)) return;
+
+        InterruptSkip();
+        Detach(_current);
+        ResetGameCamera();
+        QueueNext();
+    }
+
+    private void SetAdminBlank(bool blank)
+    {
+        if (_adminBlank == blank) return;
+        _adminBlank = blank;
+        if (!lensGameCamera) return;
+        if (blank)
+        {
+            _savedMask = lensGameCamera.cullingMask;
+            _savedClear = lensGameCamera.clearFlags;
+            _savedBackground = lensGameCamera.backgroundColor;
+            lensGameCamera.cullingMask = 0;
+            lensGameCamera.clearFlags = CameraClearFlags.SolidColor;
+            lensGameCamera.backgroundColor = Color.black;
+        }
+        else
+        {
+            lensGameCamera.cullingMask = _savedMask;
+            lensGameCamera.clearFlags = _savedClear;
+            lensGameCamera.backgroundColor = _savedBackground;
+        }
+    }
 
     [SerializeField] private MinigameBase startMinigame;
     [SerializeField] private MinigameBase[] minigames;
@@ -106,6 +160,8 @@ public class LensMinigameManager : MonoBehaviour
         InterruptSkip();
 
         _testMode = true;
+        SetAdminBlank(false);
+        _regularCycle = false;
         _testMinigame = minigame;
         _paused = false;
         _started = true;
@@ -176,6 +232,8 @@ public class LensMinigameManager : MonoBehaviour
 
         _started = true;
         StopSwitchRoutine();
+        SetAdminBlank(false);
+        _regularCycle = false;
         _startMinigamePlayed = skipInitialSequence;
         _lastIdx = -1;
         _waitingForBoss = false;
@@ -246,7 +304,7 @@ public class LensMinigameManager : MonoBehaviour
         _switchRoutine = StartCoroutine(SwitchToNextRoutine(showPreview));
     }
 
-    private IEnumerator SwitchToNextRoutine(bool showPreview)
+    private IEnumerator SwitchToNextRoutine(bool showPreview, bool afterSkip = false)
     {
         HideAllMinigames();
         HidePreviewTitle();
@@ -254,17 +312,24 @@ public class LensMinigameManager : MonoBehaviour
         HideLossPresentation();
         SetTimerVisible(false);
 
-        yield return null;
+        if (!afterSkip) yield return null;
 
         if (_paused) yield break;
 
-        MinigameBase next = PickNext();
+        _regularCycle = !_testMode && (_startMinigamePlayed || !ResolveStartMinigame());
+        SetAdminBlank(_regularCycle && _adminOff && !(bossDirector && bossDirector.HasPendingBoss));
+        if (_adminBlank)
+        {
+            _switchRoutine = null;
+            yield break;
+        }
+        MinigameBase next = afterSkip && _testMode ? _testMinigame : PickNext();
         if (next == null)
             yield break;
 
         if (showPreview && !IsStartMinigame(next))
         {
-            yield return new WaitForSeconds(blankDelay);
+            if (!afterSkip) yield return new WaitForSeconds(blankDelay);
             if (_paused) yield break;
 
             ShowPreviewTitle(next.PreviewTitleSprite);
@@ -294,6 +359,8 @@ public class LensMinigameManager : MonoBehaviour
             Detach(_current);
             return first;
         }
+
+        if (_regularCycle && _adminGame) return _adminGame;
 
         if (minigames == null || minigames.Length == 0)
         {
@@ -884,10 +951,7 @@ public class LensMinigameManager : MonoBehaviour
     {
         if (!_skipPending || _paused || !enabled) return;
         _skipPending = false;
-        HideAllMinigames();
-        ResetGameCamera();
-        MinigameBase next = _testMode ? _testMinigame : PickNext();
-        if (next != null) StartMinigame(next);
+        _switchRoutine = StartCoroutine(SwitchToNextRoutine(true, true));
     }
 
     private void InterruptSkip()
@@ -898,6 +962,8 @@ public class LensMinigameManager : MonoBehaviour
 
     private void OnDisable()
     {
+        SetAdminBlank(false);
+        _regularCycle = false;
         InterruptSkip();
     }
 }

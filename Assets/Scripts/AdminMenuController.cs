@@ -6,6 +6,12 @@ public sealed class AdminMenuController : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private Button openButton;
     [SerializeField] private Button closeButton;
+    [SerializeField] private Button refillSkipsButton;
+    [SerializeField] private LensSkipController[] skipControllers;
+    [SerializeField] private LensMinigameManager leftManager;
+    [SerializeField] private LensMinigameManager rightManager;
+    [SerializeField] private Dropdown leftPicker;
+    [SerializeField] private Dropdown rightPicker;
     [SerializeField] private Toggle skipInitialSequenceToggle;
     [SerializeField] private KeyCode toggleInitialSequenceHotkey = KeyCode.F8;
 
@@ -13,6 +19,16 @@ public sealed class AdminMenuController : MonoBehaviour
     {
         if (panel != null)
             panel.SetActive(false);
+
+        if (leftManager && rightManager && leftPicker && rightPicker)
+        {
+            var left = new AdminLensPicker(leftManager, leftPicker, "Left");
+            var right = new AdminLensPicker(rightManager, rightPicker, "Right");
+            if (left.IsOff && right.IsOff) right.UseRandom();
+            left.TurnedOff += () => { if (right.IsOff) right.UseRandom(); };
+            right.TurnedOff += () => { if (left.IsOff) left.UseRandom(); };
+        }
+        else Debug.LogError("Admin lens selectors or minigame managers are not assigned.", this);
 
         if (skipInitialSequenceToggle != null)
         {
@@ -23,6 +39,7 @@ public sealed class AdminMenuController : MonoBehaviour
 
     private void OnEnable()
     {
+        if (refillSkipsButton) refillSkipsButton.onClick.AddListener(RefillSkips);
         if (openButton != null)
             openButton.onClick.AddListener(TogglePanel);
         if (closeButton != null)
@@ -33,6 +50,7 @@ public sealed class AdminMenuController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (refillSkipsButton) refillSkipsButton.onClick.RemoveListener(RefillSkips);
         if (openButton != null)
             openButton.onClick.RemoveListener(TogglePanel);
         if (closeButton != null)
@@ -51,6 +69,12 @@ public sealed class AdminMenuController : MonoBehaviour
     {
         if (panel != null)
             panel.SetActive(!panel.activeSelf);
+    }
+
+    private void RefillSkips()
+    {
+        foreach (var controller in skipControllers)
+            if (controller) controller.RefillCharges();
     }
 
     private void ClosePanel()
